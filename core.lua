@@ -2298,7 +2298,7 @@ do
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 999
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.Enabled = Settings[UI_KEY] ~= false
+	gui.Enabled = Settings[UI_KEY] == true
 	gui.Parent = parent
 
 	local frame = Instance.new("Frame")
@@ -2382,7 +2382,7 @@ do
 	SectionStatusUI.CreateToggle({
 		Title = "Show TopiHub Status UI",
 		Desc = "Show what the script is doing at the top of the screen",
-		Default = Settings[UI_KEY] ~= false,
+		Default = Settings[UI_KEY] == true,
 	}, function(v)
 		SaveSettings(UI_KEY, v)
 		gui.Enabled = v
