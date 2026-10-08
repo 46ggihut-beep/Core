@@ -363,7 +363,7 @@ do
 	local t0 = tick()
 	repeat
 		wait(0.25)
-	until HasTeam() or tick() - t0 > 3
+	until HasTeam() or tick() - t0 > 1
 end
 if not HasTeam() then
 	repeat
@@ -421,7 +421,7 @@ end
 task.spawn(function()
 	pcall(function()
 		local DISCORD_LINK = "https://discord.gg/BdMzPwqnR"
-		local AUTO_REMOVE_AFTER = 10
+		local AUTO_REMOVE_AFTER = 15
 		local TweenService = game:GetService("TweenService")
 		local parent = (gethui and gethui()) or game:GetService("CoreGui")
 		local old = parent:FindFirstChild("TopiDiscordCard")
