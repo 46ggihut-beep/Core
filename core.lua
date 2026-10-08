@@ -1161,14 +1161,14 @@ local A = (function()
 				Library:Notify({
 					Title = "UI Library",
 					Description = "The UI automatically hides once executed.\nPress the button at the bottom-left of the screen to show the GUI.",
-					Duration = 3,
+					Duration = 5,
 				})
 			end)
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "Fixed lag when loading the script.",
-					Duration = 5,
+					Description = "Add Toggle buddha farimg (Tab Faring).",
+					Duration = 10,
 				})
 			end)
 		end)
@@ -5373,7 +5373,8 @@ do
 			st.arrivedAt = now
 			return true
 		end
-		if now - st.arrivedAt < delay or now - st.lastEntrance < 1.5 then
+		-- delay giam xuong 0.3s (tham so delay cu 0.6/0.7 khong dung nua)
+		if now - st.arrivedAt < 0.3 or now - st.lastEntrance < 1.5 then
 			return true
 		end
 		if not st.attemptStart or now - st.attemptStart > 60 then
@@ -5385,11 +5386,23 @@ do
 			return false
 		end
 		st.lastEntrance = now
-		I()
-		pcall(function()
-			game.ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", entrancePos)
-		end)
-		task.wait(0.6)
+		-- chay remote -> delay 0.2 -> chay lai ... cho toi khi player thuc su bi tele (dich chuyen > 100 stud)
+		-- (toi da 20s de khong treo; het gio van chua tele thi tinh la 1 lan that bai nhu cu)
+		local before = H.Position
+		local t0 = tick()
+		while tick() - t0 < 20 do
+			k.LastCall = tick() -- chong watchdog CancelCurrent khi chay blocking
+			I()
+			pcall(function()
+				game.ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", entrancePos)
+			end)
+			task.wait(0.2)
+			local hrp = getHRP()
+			if not hrp or (hrp.Position - before).Magnitude > 100 then
+				break -- da tele (hoac chet) -> khong chay lan 2, lan 3 nua
+			end
+		end
+		st.lastEntrance = tick()
 		if after then
 			pcall(after)
 		end
@@ -5850,35 +5863,47 @@ do
 		if not flyTo(h.fly) then
 			return false
 		end
-		hold(0.6)
+		-- bay toi -> delay 0.3 (nhay thi giu 0.6 nhu cu) -> chay remote -> delay 0.2 -> chay lai cho toi khi tele duoc
+		hold(h.jump and 0.6 or 0.3)
 		if h.sub then
 			local b0 = getHRP()
 			b0 = b0 and b0.Position
-			pcall(function()
-				game:GetService("ReplicatedStorage").Modules.Net
-					:FindFirstChild("RF/SubmarineWorkerSpeak")
-					:InvokeServer("TravelToSubmergedIsland")
-			end)
-			pcall(function()
-				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetLastSpawnPoint", "SubmergedIsland")
-			end)
-			hold(0.6)
-			local c0 = getHRP()
-			local moved = c0 and b0 and (c0.Position - b0).Magnitude > 500
+			local moved = false
+			local t0 = tick()
+			while tick() - t0 < 30 and not cancelled do
+				alive()
+				pcall(function()
+					game:GetService("ReplicatedStorage").Modules.Net
+						:FindFirstChild("RF/SubmarineWorkerSpeak")
+						:InvokeServer("TravelToSubmergedIsland")
+				end)
+				pcall(function()
+					game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetLastSpawnPoint", "SubmergedIsland")
+				end)
+				hold(0.2)
+				local c0 = getHRP()
+				if c0 and b0 and (c0.Position - b0).Magnitude > 500 then
+					moved = true
+					break
+				end
+			end
 			dbg("TravelToSubmergedIsland dịch chuyển:", moved)
-			return moved and true or false
+			return moved
 		end
 		if h.ent then
 			local before = getHRP()
 			before = before and before.Position
 			local moved = false
-			for attempt = 1, 3 do
+			local attempt, t0 = 0, tick()
+			-- lan dau da tele duoc thi thoi; chua duoc thi cu chay lai moi 0.2s (toi da 30s)
+			while tick() - t0 < 30 and not cancelled do
+				attempt = attempt + 1
 				I()
 				local ok, res = pcall(function()
 					return game.ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", h.ent)
 				end)
 				dbg("requestEntrance lần", attempt, h.ent, "ok=", ok, "res=", typeof(res), tostring(res))
-				hold(0.6)
+				hold(0.2)
 				local cur = getHRP()
 				if cur and before and (cur.Position - before).Magnitude > 500 then
 					moved = true
@@ -5887,7 +5912,7 @@ do
 				dbg("chưa bị dịch chuyển, vị trí hiện tại", cur and cur.Position)
 			end
 			if not moved then
-				dbg("requestEntrance KHÔNG dịch chuyển sau 3 lần ->", h.to)
+				dbg("requestEntrance KHÔNG dịch chuyển sau", attempt, "lần ->", h.to)
 				return false
 			end
 		else
@@ -6123,16 +6148,18 @@ do
 			end
 			-- 2) load map đền (mượn model từ MapStash) -> delay 0.6 -> RaceV4Progress Teleport -> delay 0.6
 			BorrowTempleOfTime()
-			hold(0.6)
+			hold(0.3)
 			local inside = false
-			for attempt = 1, 3 do
+			local attempt, tStart = 0, tick()
+			while tick() - tStart < 30 do
+				attempt = attempt + 1
 				BorrowTempleOfTime() -- no-op nếu model đã được mượn
 				I()
 				local ok, res = pcall(function()
 					return game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Teleport")
 				end)
 				dbg("RaceV4Progress Teleport lần", attempt, "ok=", ok, "res=", typeof(res), tostring(res))
-				hold(0.6)
+				hold(0.2)
 				local cur = getHRP()
 				if cur and (cur.Position - entry).Magnitude < 3000 then
 					inside = true
@@ -6841,6 +6868,9 @@ local function m(E)
 		and (t.Character.HumanoidRootPart.Position - E.HumanoidRootPart.Position).Magnitude < 70
 end
 getgenv().ClickM1 = function(E, l)
+	if E and getgenv().BuddhaFarmEnsure then
+		getgenv().BuddhaFarmEnsure()
+	end
 	if not m(E) then
 		return
 	end
@@ -6852,6 +6882,9 @@ getgenv().ClickM1 = function(E, l)
 	AttackFunction(l and 80 or 30)
 end
 getgenv().ClickM1Dungeon = function(E, l)
+	if E and getgenv().BuddhaFarmEnsure then
+		getgenv().BuddhaFarmEnsure()
+	end
 	if not m(E) then
 		return
 	end
@@ -6863,6 +6896,9 @@ getgenv().ClickM1Dungeon = function(E, l)
 	AttackFunction(l and 80 or 30)
 end
 getgenv().ClickM1Volcano = function(E, l)
+	if E and getgenv().BuddhaFarmEnsure then
+		getgenv().BuddhaFarmEnsure()
+	end
 	if not m(E) then
 		return
 	end
@@ -7688,6 +7724,138 @@ _("Melee", { "Z", "X", "C" })
 _("Sword", { "Z", "X" })
 _("Gun", { "Z", "X" })
 _("Blox Fruit", { "Z", "X", "C", "V", "F" })
+-- ===== USE BUDDHA WITH FARMING =====
+-- Phat V1: workspace.Characters.<ten>["Body Colors"] co tat ca mau = New Yeller (255,255,0)
+-- Phat V2: "Body Colors" bien mat + xuat hien "FakeHead"
+-- V1/V2 -> farm nhu cu. Chua phai -> dung fly, trang bi Buddha-Buddha, bam Z, cho thanh cong -> delay 0.6 -> farm
+do
+	local Players = game:GetService("Players")
+	local VIM = game:GetService("VirtualInputManager")
+	local BUDDHA = "Buddha-Buddha"
+	local KEY = "Use Buddha with farming"
+	local running, retryAt = false, 0
+
+	local function charModel()
+		local p = Players.LocalPlayer
+		local chars = workspace:FindFirstChild("Characters")
+		return (chars and chars:FindFirstChild(p.Name)) or p.Character
+	end
+
+	local function isYellow(c)
+		return typeof(c) == "Color3"
+			and math.floor(c.R * 255 + 0.5) == 255
+			and math.floor(c.G * 255 + 0.5) == 255
+			and math.floor(c.B * 255 + 0.5) == 0
+	end
+
+	-- tra ve "V1" / "V2" / nil (chua bat phat)
+	local function buddhaState()
+		local ch = charModel()
+		if not ch then
+			return nil
+		end
+		local bc = ch:FindFirstChild("Body Colors")
+		if bc then
+			local ok, yellow = pcall(function()
+				return isYellow(bc.HeadColor3)
+					and isYellow(bc.TorsoColor3)
+					and isYellow(bc.LeftArmColor3)
+					and isYellow(bc.RightArmColor3)
+					and isYellow(bc.LeftLegColor3)
+					and isYellow(bc.RightLegColor3)
+			end)
+			return (ok and yellow) and "V1" or nil
+		end
+		return ch:FindFirstChild("FakeHead") and "V2" or nil
+	end
+
+	-- ten fruit dang co (Backpack hoac dang cam), nil neu khong co fruit
+	getgenv().BuddhaCurrentFruit = function()
+		local p = Players.LocalPlayer
+		for _, holder in ipairs({ p.Character, p:FindFirstChild("Backpack") }) do
+			if holder then
+				for _, tool in ipairs(holder:GetChildren()) do
+					if tool:IsA("Tool") and tool.ToolTip == "Blox Fruit" then
+						return tool.Name
+					end
+				end
+			end
+		end
+		return nil
+	end
+
+	local function equipBuddha()
+		local p = Players.LocalPlayer
+		local ch = p.Character
+		local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+		if not hum or hum.Health <= 0 or hum.Sit then
+			return false
+		end
+		if ch:FindFirstChild(BUDDHA) then
+			return true
+		end
+		local bp = p:FindFirstChild("Backpack")
+		local tool = bp and bp:FindFirstChild(BUDDHA)
+		if tool then
+			hum:EquipTool(tool)
+			return true
+		end
+		return false
+	end
+
+	local function pressZ()
+		VIM:SendKeyEvent(true, "Z", false, game)
+		task.wait(0.1)
+		VIM:SendKeyEvent(false, "Z", false, game)
+	end
+
+	-- goi truoc khi danh mob (ClickM1...). Chi fly (khong danh mob) thi khong bi goi nen khong kich hoat.
+	getgenv().BuddhaFarmEnsure = function()
+		if running or not Settings[KEY] or getgenv().Sky3Climbing or tick() < retryAt then
+			return
+		end
+		if buddhaState() then
+			return -- da la Phat V1 hoac V2 -> farm nhu cu
+		end
+		local ch = Players.LocalPlayer.Character
+		local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+		if not hum or hum.Health <= 0 then
+			return
+		end
+		running = true
+		pcall(function()
+			pcall(function()
+				TweenManager.CancelCurrent() -- dung fly truoc khi bat phat
+			end)
+			local ok = false
+			for _ = 1, 6 do
+				if not Settings[KEY] then
+					break
+				end
+				equipBuddha()
+				task.wait(0.25)
+				pressZ()
+				local t0 = tick()
+				while tick() - t0 < 1.2 do
+					if buddhaState() then -- V1 (mau vang) hoac V2 (mat Body Colors + co FakeHead)
+						ok = true
+						break
+					end
+					task.wait(0.1)
+				end
+				if ok then
+					break
+				end
+			end
+			if ok then
+				task.wait(0.6) -- delay 0.6 roi farm binh thuong
+			else
+				retryAt = tick() + 5 -- that bai: nghi 5s roi thu lai, khong chan farm mai
+			end
+		end)
+		running = false
+	end
+end
 FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
 SettingAutoFarmSection = FarmMain.CreateSection("Setting Farm")
 SettingAutoFarmSection.CreateDropdown(
@@ -7740,6 +7908,36 @@ local o = SettingAutoFarmSection.CreateToggle(
 	{ Title = "Start Farm", Desc = nil, Default = Settings["Start Farm"] or false },
 	function(V)
 		SaveSettings("Start Farm", V)
+	end
+)
+getgenv().BuddhaFarmToggle = SettingAutoFarmSection.CreateToggle(
+	{ Title = "Use Buddha with farming", Desc = nil, Default = Settings["Use Buddha with farming"] or false },
+	function(V)
+		SaveSettings("Use Buddha with farming", V)
+		if not V then
+			return
+		end
+		task.spawn(function()
+			local p = game:GetService("Players").LocalPlayer
+			local t0 = tick()
+			while tick() - t0 < 10 and not (p.Character and p:FindFirstChild("Backpack")) do
+				task.wait(0.2)
+			end
+			task.wait(1)
+			local fruit = getgenv().BuddhaCurrentFruit()
+			if fruit ~= "Buddha-Buddha" then
+				A.CreateNoti({
+					Title = "Banana Cat Hub",
+					Desc = fruit and ("Player is using fruit " .. fruit .. ", not Buddha")
+						or "Player has no fruit equipped, not Buddha",
+					ShowTime = 5,
+				})
+				SaveSettings("Use Buddha with farming", false)
+				pcall(function()
+					getgenv().BuddhaFarmToggle.SetStage(false)
+				end)
+			end
+		end)
 	end
 )
 MasteryFarmSection = FarmMain.CreateSection("Mastery Farm")
