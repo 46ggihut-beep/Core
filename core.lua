@@ -570,7 +570,7 @@ local A = (function()
 	local API = { Options = {} }
 
 	----------------------------------------------------------------- THEME (tim) + avatar
-	local LOGO = "rbxassetid://107742993121192"
+	local LOGO = "rbxassetid://77671524243147"
 	local PURPLE = Color3.fromRGB(150, 90, 255)
 	do
 		local U = getgenv().UIColor
@@ -1153,7 +1153,7 @@ local A = (function()
 		local Window = Library:CreateWindow({
 			Title = "Topi Hub",
 			Subtitle = "- Blox Fruit by wzarii",
-			Image = "rbxassetid://107742993121192",
+			Image = "rbxassetid://77671524243147",
 		})
 
 		task.delay(1, function()
