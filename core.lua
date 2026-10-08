@@ -1033,6 +1033,13 @@ local A = (function()
 					Duration = 3,
 				})
 			end)
+			pcall(function()
+				Library:Notify({
+					Title = "Update",
+					Description = "Fixed lag when loading the script.",
+					Duration = 5,
+				})
+			end)
 		end)
 
 		local main = {}
