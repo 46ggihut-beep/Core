@@ -1167,7 +1167,7 @@ local A = (function()
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "Add Toggle buddha farimg (Tab Faring).",
+					Description = "Add Toggle buddha farming (Tab Farming).",
 					Duration = 10,
 				})
 			end)
