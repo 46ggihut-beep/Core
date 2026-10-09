@@ -8331,6 +8331,19 @@ function AutoAllSkill(V)
 		equiptool(C.Name)
 		return
 	end
+	if V and AutoSkillVMelees and AutoSkillVMelees[V.Name] and IsMeleeSkillReady(V.Name, "V") then
+		equiptool(V.Name)
+		if t.Character:FindFirstChild(V.Name) then
+			game:GetService("VirtualInputManager"):SendKeyEvent(true, "V", false, game)
+			if Settings["Use skill fast dont hold"] then
+				task.wait(0.05)
+			else
+				task.wait(HoldDelay("V", V.Name))
+			end
+			game:GetService("VirtualInputManager"):SendKeyEvent(false, "V", false, game)
+			return
+		end
+	end
 	J = (function() if V and (CheckCDSkillTransformation(V, Settings["Select Skills " .. V.ToolTip])) then return (CheckCDSkillTransformation(V, Settings["Select Skills " .. V.ToolTip])) else return (function() if H and (CheckCDSkillTransformation(H, Settings["Select Skills " .. H.ToolTip])) then return (CheckCDSkillTransformation(H, Settings["Select Skills " .. H.ToolTip])) else return (function() if C and (CheckCDSkillTransformation(C, Settings["Select Skills " .. C.ToolTip])) then return (CheckCDSkillTransformation(C, Settings["Select Skills " .. C.ToolTip])) else return (function() if B and (CheckCDSkillTransformation(B, Settings["Select Skills " .. B.ToolTip])) then return (CheckCDSkillTransformation(B, Settings["Select Skills " .. B.ToolTip])) else return nil end end)() end end)() end end)() end end)()
 	if J then
 		B = J.Parent.Name
@@ -16164,20 +16177,6 @@ end)
 
 
 AutoSkillVMelees = { ["Black Leg"] = true, ["Death Step"] = true }
-AutoSkillVLast = 0
-
-function GetEquippedMeleeName()
-	local char = game.Players.LocalPlayer.Character
-	if not char then
-		return nil
-	end
-	for _, tool in ipairs(char:GetChildren()) do
-		if tool:IsA("Tool") and tool.ToolTip == "Melee" then
-			return tool.Name
-		end
-	end
-	return nil
-end
 
 function IsMeleeSkillReady(meleeName, key)
 	local main = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
@@ -16197,50 +16196,6 @@ function IsMeleeSkillReady(meleeName, key)
 	end
 	return true
 end
-
-pcall(function()
-	SelectSkillsSection.CreateToggle({
-		Title = "Auto Skill V (Black Leg / Death Step)",
-		Desc = "Dung skill V khi het cooldown",
-		Default = Settings["Auto Skill V Melee"] ~= false,
-	}, function(v)
-		SaveSettings("Auto Skill V Melee", v)
-	end)
-end)
-
-task.spawn(function()
-	local VIM = game:GetService("VirtualInputManager")
-	local UIS = game:GetService("UserInputService")
-	while task.wait(0.25) do
-		pcall(function()
-			if Settings["Auto Skill V Melee"] == false then
-				return
-			end
-			local char = game.Players.LocalPlayer.Character
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			if not hum or hum.Health <= 0 then
-				return
-			end
-			local name = GetEquippedMeleeName()
-			if not name or not AutoSkillVMelees[name] then
-				return
-			end
-			if UIS:GetFocusedTextBox() then
-				return
-			end
-			if tick() - AutoSkillVLast < 1 then
-				return
-			end
-			if not IsMeleeSkillReady(name, "V") then
-				return
-			end
-			AutoSkillVLast = tick()
-			VIM:SendKeyEvent(true, "V", false, game)
-			task.wait(0.1)
-			VIM:SendKeyEvent(false, "V", false, game)
-		end)
-	end
-end)
 
 BuyMeleeQuestDefs = {
 	["Electro"] = { Name = "Electric Fighting Teacher", Island = "Sky" },
