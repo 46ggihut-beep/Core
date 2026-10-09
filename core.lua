@@ -1112,7 +1112,7 @@ local A = (function()
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "Add Toggle buddha farming (Tab Farming).\nAdd label Ken Level [FarmObservation] (Tab Farming Other)",
+					Description = "Add Toggle buddha farming (Tab Farming).\nAdd label Ken Level [FarmObservation] (Tab Farming Other).",
 					Duration = 10,
 				})
 			end)
