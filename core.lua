@@ -282,6 +282,10 @@ function ReadSetting(tries)
 end
 Settings = ReadSetting()
 getgenv().Settings = Settings
+BuyMeleeSecretForce = false
+function IsSecretQuestOn()
+	return (Settings and Settings["Auto Secret Quest"]) or BuyMeleeSecretForce
+end
 function PrepareMultiSelectList(b, t, A)
 	local a = {}
 	for s in pairs(b) do
@@ -1663,10 +1667,23 @@ SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = fa
 	g["Black Leg"] = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = false }, function(f)
-	if f then
-		spawn(function()
-			while g["Fishman Karate"] and (task.wait()) do
+SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = Settings["Buy Fishman Karate"] == true }, function(f)
+	g["Fishman Karate"] = f
+	SaveSettings("Buy Fishman Karate", f)
+	if not f then
+		pcall(function()
+			if BuyMeleeCancel then
+				BuyMeleeCancel("Fishman Karate")
+			end
+		end)
+		return
+	end
+	spawn(function()
+		while g["Fishman Karate"] and (task.wait()) do
+			local ok, canBuy = pcall(function()
+				return BuyMeleeGate and BuyMeleeGate("Fishman Karate")
+			end)
+			if ok and canBuy then
 				local K, K = pcall(function()
 					local R = DetectNpc(G.BuyFishmanKarate)
 					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) < 8 then
@@ -1677,16 +1694,30 @@ SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default
 				if K then
 					print(K)
 				end
+			else
+				task.wait(0.5)
 			end
-		end)
-	end
-	g["Fishman Karate"] = f
+		end
+	end)
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = false }, function(f)
-	if f then
-		spawn(function()
-			while g.Electro and (task.wait()) do
+SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = Settings["Buy Electro"] == true }, function(f)
+	g.Electro = f
+	SaveSettings("Buy Electro", f)
+	if not f then
+		pcall(function()
+			if BuyMeleeCancel then
+				BuyMeleeCancel("Electro")
+			end
+		end)
+		return
+	end
+	spawn(function()
+		while g.Electro and (task.wait()) do
+			local ok, canBuy = pcall(function()
+				return BuyMeleeGate and BuyMeleeGate("Electro")
+			end)
+			if ok and canBuy then
 				pcall(function()
 					local K = DetectNpc(G.BuyElectro)
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
@@ -1694,10 +1725,11 @@ SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = fals
 					end
 					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
+			else
+				task.wait(0.5)
 			end
-		end)
-	end
-	g.Electro = f
+		end
+	end)
 end)
 
 SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default = false }, function(f)
@@ -4423,7 +4455,7 @@ function ToggleNoclip()
 		or Settings["Auto Upgrade Gun Inventory"]
 		or Settings["Kill Boss"]
 		or Settings["Kill Mob"]
-		or Settings["Auto Secret Quest"]
+		or IsSecretQuestOn()
 		or Settings["Auto UP Observation V2"]
 		or Settings["Auto New World"]
 		or Settings["Auto Third World"]
@@ -4524,7 +4556,7 @@ getgenv().TweenManager = {
 		return d
 	end,
 	CancelCurrent = function()
-		if Settings and Settings["Auto Secret Quest"] then
+		if Settings and IsSecretQuestOn() then
 			TweenManager.CancelTweenOnly()
 			return
 		end
@@ -10028,7 +10060,7 @@ do
 			if hrp then
 				hrp.Anchored = false
 				local ff = hrp:FindFirstChild("FloatForce")
-				if ff and not Settings["Auto Secret Quest"] then
+				if ff and not IsSecretQuestOn() then
 					ff:Destroy()
 				end
 			end
@@ -10226,7 +10258,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 	HiddenMove = function(arg)
 		HiddenRelease()
 
-		if Settings["Auto Secret Quest"] then
+		if IsSecretQuestOn() then
 			ToTarget(arg)
 		end
 	end
@@ -10436,7 +10468,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 	end
 
 	HiddenDialogueLoop = function()
-		while Settings["Auto Secret Quest"] do
+		while IsSecretQuestOn() do
 			pcall(AutoHiddenDialogue)
 			task.wait(0.4)
 		end
@@ -10499,7 +10531,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 
 				if not (arg2 <= CountHiddenMaterial(arg)) then
 					now2 = now3
-					flag = tick() - now > 45 or not Settings["Auto Secret Quest"]
+					flag = tick() - now > 45 or not IsSecretQuestOn()
 
 					if flag then
 						__brk = true break
@@ -10508,7 +10540,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 					end
 				end
 			else
-				flag = tick() - now > 45 or not Settings["Auto Secret Quest"]
+				flag = tick() - now > 45 or not IsSecretQuestOn()
 
 				if flag then
 					__brk = true break
@@ -10638,7 +10670,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 			return true
 		end
 
-		if Settings["Auto Secret Quest"] then
+		if IsSecretQuestOn() then
 			return HiddenSettle(fisherman + Vector3.new(0, 1.5, 4), 10)
 		end
 		ToTarget(CFrame.new(fisherman + Vector3.new(0, 1.5, 4)))
@@ -11089,7 +11121,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 
 				HiddenMove(GetHiddenFarmCFrame(fighting))
 				getgenv().ClickM1(fighting, true)
-				if not (not IsHiddenTarget(fighting) or not Settings["Auto Secret Quest"] or tick() - now > n) then
+				if not (not IsHiddenTarget(fighting) or not IsSecretQuestOn() or tick() - now > n) then
 					break
 				end
 				__brk = true break
@@ -11443,7 +11475,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		local now = tick()
 		local v7 = arg2
 
-		while Settings["Auto Secret Quest"] and not flag and tick() - now < 100 and humanoidRootPart.Parent do
+		while IsSecretQuestOn() and not flag and tick() - now < 100 and humanoidRootPart.Parent do
 			task.wait(0.05)
 			local flag2 = false
 
@@ -11614,7 +11646,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 					local v7 = GetNpcPosition("Sky Quest Giver 2")
 					local now = tick()
 
-					while Settings["Auto Secret Quest"] and tick() - now < 60 do
+					while IsSecretQuestOn() and tick() - now < 60 do
 						task.wait(0.3)
 						if v7 and HiddenSettle(v7 + Vector3.new(0, 1.5, 4), 10) then
 							TalkHiddenNpc("Sky Quest Giver 2", { "The old temple", "I'll get it" })
@@ -11655,7 +11687,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		end
 		local response2
 
-		while Settings["Auto Secret Quest"] do repeat 
+		while IsSecretQuestOn() do repeat 
 			local str2 = "/4: watching " .. #response.Manifest .. " ships"
 			SetHiddenStep("Lookout round " .. tostring(response.Round) .. str2)
 			local now = tick()
@@ -11771,7 +11803,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 			local now = tick()
 			HiddenEvent.arrived = nil
 
-			while Settings["Auto Secret Quest"] and tick() - now < 60 do
+			while IsSecretQuestOn() and tick() - now < 60 do
 				task.wait(0.1)
 				fn()
 				if HiddenSettle(arg2, 8) then
@@ -11784,7 +11816,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		local cframe = nil
 
 		for k, v6 in pairs(tbl9) do local __brk = false repeat 
-			if not (not Settings["Auto Secret Quest"] or not fn2(v6.Position + Vector3.new(0, 3, 0))) then
+			if not (not IsSecretQuestOn() or not fn2(v6.Position + Vector3.new(0, 3, 0))) then
 				SetHiddenStep("Roll snowball " .. n + 1 .. "/3")
 				arg:FireServer("GrabSnowball", k)
 				n = n + (1)
@@ -12152,7 +12184,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 						pcall(localPlayer.Character.Humanoid.EquipTool, localPlayer.Character.Humanoid, v7)
 					end
 
-					if not (workspace:GetServerTimeNow() >= n - 0.08 or not Settings["Auto Secret Quest"]) then
+					if not (workspace:GetServerTimeNow() >= n - 0.08 or not IsSecretQuestOn()) then
 						break
 					end
 					__brk = true break
@@ -15697,7 +15729,9 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 				end
 			end
 
-			table.insert(tbl9, v8)
+			if not HiddenEvent.only or HiddenEvent.only[v8.Name] then
+				table.insert(tbl9, v8)
+			end
 		end
 
 		table.sort(tbl9, function(arg, arg2)
@@ -15873,6 +15907,12 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 
 		HiddenEvent.current = nil
 
+		if n == 0 and HiddenEvent.only then
+			SetHiddenStep("Targeted quest finished")
+			HiddenEvent.checked = 0
+			return
+		end
+
 		if n == 0 then
 			SetHiddenStep("All 39 secrets are complete")
 			SaveSettings("Auto Secret Quest", false)
@@ -15995,7 +16035,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 
 				StatusHiddenProgress.SetText(string.format("Secret Quest : %d/39 Quests", doneCount))
 				StatusHiddenQuest.SetText("Title Quest : " .. (HiddenEvent.current or "None"))
-				StatusHiddenStep.SetText("Doing Quest : " .. (Settings["Auto Secret Quest"] and HiddenEvent.step or "None"))
+				StatusHiddenStep.SetText("Doing Quest : " .. (IsSecretQuestOn() and HiddenEvent.step or "None"))
 
 				if Place_Id.sea1() then
 					local v7 = GetHiddenRaidHint()
@@ -16121,6 +16161,254 @@ HiddenEventSection.CreateToggle({
 		HiddenEvent.running = false
 	end)
 end)
+
+
+AutoSkillVMelees = { ["Black Leg"] = true, ["Death Step"] = true }
+AutoSkillVLast = 0
+
+function GetEquippedMeleeName()
+	local char = game.Players.LocalPlayer.Character
+	if not char then
+		return nil
+	end
+	for _, tool in ipairs(char:GetChildren()) do
+		if tool:IsA("Tool") and tool.ToolTip == "Melee" then
+			return tool.Name
+		end
+	end
+	return nil
+end
+
+function IsMeleeSkillReady(meleeName, key)
+	local main = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
+	local skills = main and main:FindFirstChild("Skills")
+	local list = skills and skills:FindFirstChild(meleeName)
+	local frame = list and list:FindFirstChild(key)
+	if not frame or not frame:IsA("Frame") then
+		return false
+	end
+	local cooldown = frame:FindFirstChild("Cooldown")
+	if not cooldown or cooldown.Size.X.Scale > 0 then
+		return false
+	end
+	local title = frame:FindFirstChild("Title")
+	if title and title:IsA("TextLabel") and title.TextColor3.R <= 0.9 then
+		return false
+	end
+	return true
+end
+
+pcall(function()
+	SelectSkillsSection.CreateToggle({
+		Title = "Auto Skill V (Black Leg / Death Step)",
+		Desc = "Dung skill V khi het cooldown",
+		Default = Settings["Auto Skill V Melee"] ~= false,
+	}, function(v)
+		SaveSettings("Auto Skill V Melee", v)
+	end)
+end)
+
+task.spawn(function()
+	local VIM = game:GetService("VirtualInputManager")
+	local UIS = game:GetService("UserInputService")
+	while task.wait(0.25) do
+		pcall(function()
+			if Settings["Auto Skill V Melee"] == false then
+				return
+			end
+			local char = game.Players.LocalPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if not hum or hum.Health <= 0 then
+				return
+			end
+			local name = GetEquippedMeleeName()
+			if not name or not AutoSkillVMelees[name] then
+				return
+			end
+			if UIS:GetFocusedTextBox() then
+				return
+			end
+			if tick() - AutoSkillVLast < 1 then
+				return
+			end
+			if not IsMeleeSkillReady(name, "V") then
+				return
+			end
+			AutoSkillVLast = tick()
+			VIM:SendKeyEvent(true, "V", false, game)
+			task.wait(0.1)
+			VIM:SendKeyEvent(false, "V", false, game)
+		end)
+	end
+end)
+
+BuyMeleeQuestDefs = {
+	["Electro"] = { Name = "Electric Fighting Teacher", Island = "Sky" },
+	["Fishman Karate"] = { Name = "Fishman Karate", Island = "Underwater City" },
+}
+BuyMeleePending = {}
+BuyMeleeDone = {}
+BuyMeleeChecked = {}
+BuyMeleeDriverRunning = false
+BuyMeleeTravelAt = 0
+
+function BuyMeleeQuestDone(def, force)
+	local key = "Sea1/" .. def.Island .. "/" .. def.Name
+	local ok, progress = pcall(GetHiddenProgress, force)
+	if not ok or type(progress) ~= "table" then
+		return nil
+	end
+	local v = progress[key]
+	if v == true or (type(v) == "table" and v.Completed == true) then
+		return true
+	end
+	if next(progress) == nil then
+		return nil
+	end
+	return false
+end
+
+function BuyMeleeStartDriver()
+	if BuyMeleeDriverRunning or HiddenEvent.running then
+		return
+	end
+	BuyMeleeDriverRunning = true
+	BuyMeleeSecretForce = true
+	HiddenEvent.running = true
+
+	task.spawn(function()
+		pcall(function()
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Geppo")
+		end)
+	end)
+
+	if type(HiddenDialogueLoop) == "function" then
+		task.spawn(HiddenDialogueLoop)
+	end
+
+	task.spawn(function()
+		while next(BuyMeleePending) and Place_Id.sea1() and task.wait(0.15) do
+			local ok, result
+			local stackOk = (StackFarmOther ~= false) and (getgenv().StackFarmOther ~= false)
+			if stackOk then
+				ok, result = pcall(AutoHiddenEvent)
+			else
+				SetHiddenStep("Paused while another feature is running")
+				ok = true
+			end
+
+			if not ok then
+				print("[BuyMeleeQuest]", result)
+			end
+
+			pcall(function()
+				if CheckHiddenStall then
+					CheckHiddenStall()
+				end
+			end)
+
+			local anchored = HiddenEvent.anchored
+			if anchored then
+				anchored = tick() - (HiddenEvent.holdTime or 0) > 0.6
+			end
+			if anchored and HiddenRelease then
+				HiddenRelease()
+			end
+
+			local step = tostring(HiddenEvent.step or "")
+			if step:find("^Waiting") or step:find(" stirs on ") or step == "Idle" then
+				task.wait(0.6)
+			end
+		end
+
+		BuyMeleeSecretForce = false
+		pcall(function()
+			if HiddenRelease then
+				HiddenRelease()
+			end
+		end)
+		pcall(function()
+			TweenManager.CancelCurrent()
+		end)
+		HiddenEvent.running = false
+		BuyMeleeDriverRunning = false
+	end)
+end
+
+function BuyMeleeSync()
+	if next(BuyMeleePending) then
+		HiddenEvent.only = BuyMeleePending
+		if Place_Id.sea1() then
+			BuyMeleeStartDriver()
+		end
+	else
+		HiddenEvent.only = nil
+	end
+end
+
+function BuyMeleeCancel(melee)
+	local def = BuyMeleeQuestDefs[melee]
+	if def then
+		BuyMeleePending[def.Name] = nil
+		BuyMeleeSync()
+	end
+end
+
+function BuyMeleeGate(melee)
+	local def = BuyMeleeQuestDefs[melee]
+	if not def then
+		return true
+	end
+	if BuyMeleeDone[melee] then
+		return true
+	end
+
+	local force = tick() - (BuyMeleeChecked[melee] or 0) > 5
+	if force then
+		BuyMeleeChecked[melee] = tick()
+	end
+
+	local done = BuyMeleeQuestDone(def, force)
+	if done == true then
+		BuyMeleeDone[melee] = true
+		BuyMeleePending[def.Name] = nil
+		BuyMeleeSync()
+		pcall(function()
+			HiddenNotify(melee .. " quest done, buying melee", "buymelee" .. melee, "success")
+		end)
+		return true
+	end
+
+	if not Place_Id.sea1() then
+		BuyMeleePending[def.Name] = nil
+		BuyMeleeSync()
+		if tick() - BuyMeleeTravelAt > 20 then
+			BuyMeleeTravelAt = tick()
+			pcall(function()
+				HiddenNotify(melee .. " quest not done, traveling to Sea 1", "buymelee" .. melee .. "travel", "info")
+			end)
+			task.spawn(function()
+				pcall(function()
+					game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelMain")
+				end)
+			end)
+		end
+		return false
+	end
+
+	if done == nil then
+		return false
+	end
+
+	if not BuyMeleePending[def.Name] then
+		BuyMeleePending[def.Name] = true
+		pcall(function()
+			HiddenNotify(melee .. " quest not done, starting hidden quest", "buymelee" .. melee .. "start", "info")
+		end)
+	end
+	BuyMeleeSync()
+	return false
+end
 
 print("[BananaCat] Secret Quest (39) module loaded — section ở đầu Farming Other")
 FishingSection = FarmotherMain.CreateSection("Fishing")
@@ -28938,7 +29226,7 @@ if not getgenv().BananaCatMainLoop then
 				end
 			end
 			local T = t.Character:FindFirstChild("HumanoidRootPart")
-			local secretOn = Settings["Auto Secret Quest"]
+			local secretOn = IsSecretQuestOn()
 			if T and secretOn and not T:FindFirstChild("FloatForce") then
 				local ff = Instance.new("BodyVelocity")
 				ff.Name = "FloatForce"
