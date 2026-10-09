@@ -5,7 +5,6 @@ end
 repeat
 	wait()
 until game:IsLoaded() and game.Players.LocalPlayer
--- Luraph macro stubs (LPH_ATTRIBUTES(VM(NONE)) duoc goi o 4 cho, truoc do khong duoc dinh nghia)
 LPH_ATTRIBUTES = LPH_ATTRIBUTES or function(...)
 	return ...
 end
@@ -13,7 +12,6 @@ VM = VM or function(...)
 	return ...
 end
 
--- Nang identity thread (loi "lacking capability Plugin") + guard UI de 1 element loi khong lam dung ca script
 function ElevateIdentity()
 	pcall(function()
 		local f = setthreadidentity or setidentity or set_thread_identity or (syn and syn.set_thread_identity) or setthreadcontext
@@ -24,16 +22,6 @@ function ElevateIdentity()
 end
 ElevateIdentity()
 
--- Mo rong ban kinh Streaming: neu khong, cac Part spawn quai (EnemySpawns) va
--- chinh con quai trong Workspace.Enemies se KHONG ton tai phia client cho toi
--- khi nhan vat thuc su di toi gan (Roblox StreamingEnabled). Luc do DetectMob
--- va DetectPartSpawnMob deu tra ve nil -> farm dung im cho den khi minh tu chay
--- lai gan. Tat/no rong Streaming ngay tu dau de mob spawn xa cung duoc client
--- nhan biet va script tu di toi duoc.
--- FIX HOP CRASH: truoc day set StreamingMinRadius/TargetRadius = 1e8 ngay luc load -> sau hop/travel
--- client bi ep load CA map moi trong khi map cu chua giai phong -> het RAM -> Roblox tu thoat.
--- Gio: chi mo rong sau khi server moi on dinh (nhan vat load + 15s), muc vua phai, va tra ve
--- gia tri goc ngay khi bat dau teleport de engine con xa duoc map cu.
 getgenv().__BF_TELEPORTING = false
 local __streamOrig = {}
 pcall(function()
@@ -127,8 +115,6 @@ local function guardUI(obj, label)
 	})
 end
 
--- Quest UI check: V1 (PlayerGui.Main.Quest) + V2 (PlayerGui.TrackedQuestFrame)
--- V3 (StarterGui.Main.Quest) khong dung: day la ban mau, khong phan anh quest dang co.
 local function readText(inst)
 	if not inst then
 		return nil
@@ -149,7 +135,6 @@ function GetQuestTitle()
 	if not pg then
 		return nil
 	end
-	-- V1
 	local main = pg:FindFirstChild("Main") or pg:FindFirstChild("Main (minimal)")
 	local q = main and main:FindFirstChild("Quest")
 	if q and q.Visible then
@@ -160,7 +145,6 @@ function GetQuestTitle()
 			return txt
 		end
 	end
-	-- V2
 	local tr = pg:FindFirstChild("TrackedQuestFrame")
 	if tr then
 		local on = (tr:IsA("ScreenGui") and tr.Enabled) or (tr:IsA("GuiObject") and tr.Visible)
@@ -176,9 +160,6 @@ local _rawHasQuest = function()
 end
 local _questSeenUntil = 0
 function HasQuest()
-	-- Giu trang thai "co quest" trong 1s sau lan cuoi thay UI hien quest,
-	-- de tranh doc UI ngay luc dang animation/lag -> tuong nham la mat quest
-	-- roi goi lai TakeQuestLevel giua chung, gay farm level chap chon.
 	if _rawHasQuest() then
 		_questSeenUntil = tick() + 1
 		return true
@@ -186,8 +167,6 @@ function HasQuest()
 	return tick() < _questSeenUntil
 end
 
--- Lay TOAN BO text cua UI quest (V1 + V2), khong chi moi title.
--- Dung cho cac che do can so ten boss/mob (Elite Hunter, Rainbow Haki, CDK...)
 local function collectText(root)
 	local out = {}
 	if not root then
@@ -229,7 +208,6 @@ function GetQuestText()
 	end
 	return table.concat(parts, " | ")
 end
--- Quest hien tai co nhac toi `name` khong (khong phan biet hoa thuong, plain find)
 function QuestHas(name)
 	if not name then
 		return false
@@ -243,8 +221,6 @@ function QuestHas(name)
 	end
 	return false
 end
--- Dung cho Elite Hunter: dam bao dang giu quest cua boss `name`.
--- Tra ve true = co the danh boss ngay. Co cooldown de khong abandon/nhan lien tuc khi UI cap nhat cham.
 local _lastEliteTake = 0
 function EnsureEliteQuest(name)
 	if QuestHas(name) then
@@ -353,13 +329,11 @@ function FireButton(b)
 		game:GetService("GuiService").SelectedObject = nil
 	end)
 end
--- Check phe: da o Pirates/Marines thi bo qua buoc join phe, chua co phe thi moi chay logic join
 local function HasTeam()
 	local t = game:GetService("Players").LocalPlayer.Team
 	return t ~= nil and (t.Name == "Pirates" or t.Name == "Marines")
 end
 do
-	-- Team co the chua replicate ngay sau DataLoaded -> cho toi da 3s truoc khi ket luan la chua co phe
 	local t0 = tick()
 	repeat
 		wait(0.25)
@@ -387,7 +361,6 @@ if not HasTeam() then
 			end
 		end)
 	until HasTeam() or not b.Parent or not b:FindFirstChild("ChooseTeam") or not b.ChooseTeam.Visible
-	-- fallback: GUI khong click duoc thi goi thang remote SetTeam
 	if not HasTeam() then
 		pcall(function()
 			local isPirate = Settings["Select Team"] == "Pirate"
@@ -417,7 +390,6 @@ if getgenv().LoadScript then
 	return print("Double UI")
 end
 
--- ===== Discord support card (UI tu tao): thong bao + nut copy link, tu xoa sau 10s =====
 task.spawn(function()
 	pcall(function()
 		local DISCORD_LINK = "https://discord.gg/BdMzPwqnR"
@@ -523,7 +495,6 @@ task.spawn(function()
 			end
 		end
 
-		-- nhan nut: copy link + xoa UI (neu copy loi thi hien link de chep tay, khong xoa)
 		btn.MouseButton1Click:Connect(function()
 			local copy = setclipboard or toclipboard or (Clipboard and Clipboard.set)
 			local ok = copy and pcall(copy, DISCORD_LINK)
@@ -534,10 +505,8 @@ task.spawn(function()
 			end
 		end)
 
-		-- nut X: xoa UI, khong copy
 		close.MouseButton1Click:Connect(removeUI)
 
-		-- tu xoa sau 10s (tranh vuong khi treo script)
 		task.delay(AUTO_REMOVE_AFTER, removeUI)
 
 		TweenService:Create(
@@ -562,14 +531,10 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
--- ===== NEW UI: Banana Cat Hub (Library:CreateWindow / AddTab / AddLeftGroupbox) =====
--- Lop tuong thich: script van goi API cu (CreateMain/CreatePage/CreateSection/CreateToggle...),
--- ben duoi doi sang API UI moi (Window:AddTab, Tab:AddLeftGroupbox, Groupbox:AddToggle/AddButton/...).
 local A = (function()
 	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
 	local API = { Options = {} }
 
-	----------------------------------------------------------------- THEME (tim) + avatar
 	local LOGO = "rbxassetid://77671524243147"
 	local PURPLE = Color3.fromRGB(150, 90, 255)
 	do
@@ -596,7 +561,6 @@ local A = (function()
 		end
 	end
 
-	-- Mot so mau trong UI library bi viet cung (vang/xam) -> doi tai cho sang tim
 	local COLOR_MAP = {
 		["255,206,27"] = Color3.fromRGB(150, 90, 255),
 		["255,216,77"] = Color3.fromRGB(176, 128, 255),
@@ -656,7 +620,6 @@ local A = (function()
 					inst.Color = ColorSequence.new(kps)
 				end
 			end
-			-- thong bao: tieu de co chu "Banana Cat Hub" cung trong UI library
 			if inst.Name == "TextLabelNoti" and inst:IsA("TextLabel") then
 				inst.Text = string.gsub(inst.Text, "Banana Cat Hub", "Topi Hub")
 			end
@@ -670,13 +633,11 @@ local A = (function()
 				for _, d in ipairs(g:GetDescendants()) do
 					recolor(d)
 				end
-				-- element tao sau nay: doi mau sau khi thuoc tinh da set xong
 				g.DescendantAdded:Connect(function(d)
 					task.defer(recolor, d)
 				end)
 			end
 		end
-		-- nut tron an/hien GUI (goc trai duoi) duoc tao luc load library -> doi avatar o day
 		local btn = cg:FindFirstChild("Nousigi Hub Btn")
 		if btn then
 			for _, d in ipairs(btn:GetDescendants()) do
@@ -688,7 +649,6 @@ local A = (function()
 	end)
 	local Options = API.Options
 
-	-- ho tro ca cach goi obj.Fn(x) lan obj:Fn(x)
 	local function pick(a, b)
 		if b ~= nil then
 			return b
@@ -696,7 +656,6 @@ local A = (function()
 		return a
 	end
 
-	-- UI cu goi callback ngay khi tao (Default = true se tu chay lai). UI moi khong lam vay -> bat lai o day.
 	local function fire(cb, ...)
 		if not cb then
 			return
@@ -710,7 +669,6 @@ local A = (function()
 		end)
 	end
 
-	-- List dang mang {"a","b"} hoac map {a=false,b=true} -> (names da sort/giu thu tu, states)
 	local function normList(list)
 		local names, states = {}, {}
 		if type(list) ~= "table" then
@@ -744,7 +702,6 @@ local A = (function()
 		local sec = {}
 		local order = 0
 
-		-- danh LayoutOrder cho element vua tao (de tao lai dropdown van dung cho cu)
 		local function stamp(n0, keepOrder)
 			local all = getgenv().AllControls
 			if all and #all > n0 then
@@ -771,7 +728,6 @@ local A = (function()
 			return o
 		end
 
-		----------------------------------------------------------------- Toggle
 		function sec.CreateToggle(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			local default = (s.Default == true)
@@ -800,7 +756,6 @@ local A = (function()
 			return obj
 		end
 
-		----------------------------------------------------------------- Button
 		function sec.CreateButton(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			reg(title, "button", {})
@@ -823,7 +778,6 @@ local A = (function()
 			return obj
 		end
 
-		----------------------------------------------------------------- Label
 		function sec.CreateLabel(s)
 			local title = tostring(s.Title or s.Text or "")
 			local opt = reg(title, "textlabel", { text = title })
@@ -846,7 +800,6 @@ local A = (function()
 			return obj
 		end
 
-		----------------------------------------------------------------- Slider
 		function sec.CreateSlider(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			local minV = tonumber(s.Min) or 0
@@ -854,7 +807,6 @@ local A = (function()
 			local default = math.clamp(tonumber(s.Default) or minV, minV, maxV)
 			local opt = reg(title, "slider", { min = minV, max = maxV, step = 1, value = default })
 			local n0 = controlCount()
-			-- Luu y: Rouding/Rounding chi bat khi UI library da sua loi format (xem getgenv().BC_SliderRounding)
 			local rounding = getgenv().BC_SliderRounding
 			local ret = gb:AddSlider({
 				Title = title,
@@ -881,7 +833,6 @@ local A = (function()
 			return obj
 		end
 
-		----------------------------------------------------------------- Box (o nhap)
 		function sec.CreateBox(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			local default = s.Default
@@ -914,12 +865,10 @@ local A = (function()
 			return obj
 		end
 
-		----------------------------------------------------------------- Keybind
 		function sec.CreateBind(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			local callback = cb
 			if title == "Toggle GUI" then
-				-- dung ham an/hien san cua UI moi (dong bo luon nut tron goc trai duoi)
 				callback = function()
 					pcall(Library.ToggleUI)
 				end
@@ -939,12 +888,11 @@ local A = (function()
 			return ret or {}
 		end
 
-		----------------------------------------------------------------- Dropdown
 		local function multiDropdown(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			local prio = (s.Priority == true)
 			local names, states = normList(s.List)
-			local ord = {} -- thu tu uu tien (chi dung cho Priority)
+			local ord = {}
 			local init = {}
 			if prio then
 				if type(s.Default) == "table" then
@@ -999,7 +947,6 @@ local A = (function()
 				})
 				ctl = stamp(n0, keepOrder)
 				ret = r
-				-- UI moi chi co SetValue (bat true) -> dung de nap lai muc da chon
 				for _, n in ipairs(initial) do
 					pcall(function()
 						r:SetValue(n)
@@ -1009,7 +956,6 @@ local A = (function()
 			build(names, init, nil)
 
 			local obj = {}
-			-- UI moi khong co refresh list cho multi -> tao lai dropdown tai dung vi tri cu
 			function obj.GetNewList(a, b)
 				local ns, st = normList(pick(a, b))
 				local lo = ctl and ctl.Element and ctl.Element.LayoutOrder or nil
@@ -1148,7 +1094,6 @@ local A = (function()
 		return sec
 	end
 
-	----------------------------------------------------------------- Window / Page
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Topi Hub",
@@ -1167,7 +1112,7 @@ local A = (function()
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "Add Toggle buddha farming (Tab Farming).",
+					Description = "Add Toggle buddha farming (Tab Farming).\nAdd label Ken Level [FarmObservation] (Tab Farming Other)",
 					Duration = 10,
 				})
 			end)
@@ -1187,12 +1132,11 @@ local A = (function()
 		return main
 	end
 
-	----------------------------------------------------------------- Notify
 	function API.CreateNoti(s)
 		s = s or {}
 		local title = s.Title
 		if title == "Banana Cat Hub" then
-			title = "" -- UI moi da tu them "Banana Cat Hub" o dau tieu de
+			title = ""
 		end
 		pcall(function()
 			Library:Notify({
@@ -1205,7 +1149,6 @@ local A = (function()
 
 	return API
 end)()
--- ===== Topi Translator: dich UI theo ngon ngu chon trong dropdown (file dich nam tren GitHub) =====
 getgenv().TopiTranslator = (function()
 	local HttpService = game:GetService("HttpService")
 	local CoreGui = game:GetService("CoreGui")
@@ -1229,7 +1172,6 @@ getgenv().TopiTranslator = (function()
 		end)
 	end
 
-	---------------------------------------------------------------- dictionary
 	local function escape(s)
 		return (s:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"))
 	end
@@ -1275,7 +1217,6 @@ getgenv().TopiTranslator = (function()
 		end
 	end
 
-	---------------------------------------------------------------- GUI hook
 	local function propOf(inst)
 		if inst:IsA("TextBox") then
 			return "PlaceholderText"
@@ -1289,9 +1230,9 @@ getgenv().TopiTranslator = (function()
 		local o = state[prop]
 		local cur = inst[prop]
 		if cur == o.out[inst] or cur == "" then
-			return -- do chinh minh vua dat
+			return
 		end
-		o.orig[inst] = cur -- text goc moi (script vua doi)
+		o.orig[inst] = cur
 		o.out[inst] = nil
 		if not T.Enabled then
 			return
@@ -1347,7 +1288,6 @@ getgenv().TopiTranslator = (function()
 		end
 	end
 
-	-- dich lai toan bo (khi doi ngon ngu / bat / tat)
 	local function retranslate()
 		for prop, o in pairs(state) do
 			for inst, text in pairs(o.orig) do
@@ -1364,7 +1304,6 @@ getgenv().TopiTranslator = (function()
 		end
 	end
 
-	---------------------------------------------------------------- language files
 	T.Langs = { Vietnamese = "vi", Japanese = "jp", Thai = "th", Chinese = "cn" }
 	T.LangList = { "Vietnamese", "Japanese", "Thai", "Chinese" }
 	T.LangName, T.Code = nil, nil
@@ -1422,7 +1361,7 @@ getgenv().TopiTranslator = (function()
 		if data then
 			build(data)
 			retranslate()
-			task.spawn(function() -- cap nhat ngam tu GitHub cho lan sau
+			task.spawn(function()
 				local fresh, freshRaw = fetch(code)
 				if fresh and freshRaw ~= raw then
 					writeCache(code, freshRaw)
@@ -1436,7 +1375,7 @@ getgenv().TopiTranslator = (function()
 		end
 		local fresh, freshRaw = fetch(code)
 		if T.Code ~= code then
-			return true -- nguoi dung da doi sang ngon ngu khac trong luc tai
+			return true
 		end
 		if fresh then
 			writeCache(code, freshRaw)
@@ -1449,8 +1388,6 @@ getgenv().TopiTranslator = (function()
 		return false
 	end
 
-	---------------------------------------------------------------- public API
-	-- chon ngon ngu (ten hien thi trong dropdown); dang bat thi dich lai ngay
 	function T.SelectLang(name)
 		local code = T.Langs[name]
 		if not code or code == T.Code then
@@ -1480,7 +1417,6 @@ getgenv().TopiTranslator = (function()
 		end
 	end
 
-	-- dich 1 chuoi (cho UI ngoai nhu Status UI): tat dich / khong co ban dich -> tra ve nguyen van
 	function T.Translate(text)
 		if not T.Enabled or type(text) ~= "string" then
 			return text
@@ -1488,7 +1424,6 @@ getgenv().TopiTranslator = (function()
 		return lookup(text) or text
 	end
 
-	-- tao file mau de dich: Banana Cat Hub/lang/_template.json
 	function T.Dump()
 		ensureAttached()
 		local tpl, n = {}, 0
@@ -1546,15 +1481,6 @@ function CheckFruitReal(g)
 	end
 end
 SkinFruit = {}
--- spawn(function()
---     for g, g in next, require(game:GetService("ReplicatedStorage").Modules.SkinUtil.FruitSkins).Grouped do
---         for G, G in next, g do
---             getgenv().tablefruitausea3[g.StorageName] = CheckFruitReal(G.Item).Price
---             table.insert(whitelistedfruit, G.StorageName .. " Fruit")
---             SkinFruit[G.StorageName .. " Fruit"] = true
---         end
---     end
--- end)
 NameWorldMaterials = {
 	Ectoplasm = { [getgenv().CheckPlaceId2] = "TravelDressrosa" },
 	["Magma Ore"] = { [getgenv().CheckPlaceId2] = "TravelDressrosa" },
@@ -1922,17 +1848,15 @@ SectionShopAbilities.CreateButton({ Title = "Soru [ $100,000 Beli ]" }, function
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Soru")
 end)
 PageStatusAndServer = Main.CreatePage({ Page_Name = "Status And Server", Page_Title = "Status And Server" })
--- ===================== TopiHub Status UI (v4) =====================
 do
 	local Players = game:GetService("Players")
 	local lp = Players.LocalPlayer
 	local env = getgenv()
 
 	local UI_KEY = "Show TopiHub Status UI"
-	local PURPLE = Color3.fromRGB(150, 90, 255) -- cung mau tim voi UI hub
-	local BG = Color3.fromRGB(18, 12, 30) -- cung nen voi UI hub
+	local PURPLE = Color3.fromRGB(150, 90, 255)
+	local BG = Color3.fromRGB(18, 12, 30)
 
-	-- Dich theo ngon ngu dang chon trong hub (TopiTranslator). Chua bat dich / khong co ban dich -> giu nguyen tieng Anh.
 	local function tr(s)
 		local T = getgenv().TopiTranslator
 		if T and T.Translate then
@@ -1943,13 +1867,11 @@ do
 		end
 		return s
 	end
-	-- fmt("Fighting {}", name): lay mau cau da dich roi nhet `arg` vao {}
 	local function fmt(key, arg)
 		return (tr(key):gsub("{}", function()
 			return tostring(arg)
 		end))
 	end
-	-- "Start Farm : Level Farm" -> dich tung phan
 	local function actLabel(act)
 		local head, rest = act:match("^(Start Farm) : (.+)$")
 		if not head then
@@ -1961,7 +1883,6 @@ do
 		return tr(act)
 	end
 
-	-- 1) Chuỗi ưu tiên (mỗi lúc chỉ 1 cái chạy, chiếm StackFarm = false)
 	local CHAIN = {
 		"Auto New World",
 		"Collect Chest When Server Spawn God's Chalice or Fist of Darkness",
@@ -1971,12 +1892,10 @@ do
 		"Auto Elite Hunter", "Auto Factory", "Auto Pirate Raid", "Teleport To Fruit",
 		"Auto Quest Dojo Trainer",
 	}
-	-- 2) Nhóm bị chặn bởi StackFarmOther (bị tạm dừng khi chuỗi ưu tiên đang chạy)
 	local GATED_OTHER = {
 		"Auto Secret Quest", "Auto Fishing", "Auto Accept Quest Fishing",
 		"Auto Attack All Mob and Boss", "Auto Chest", "Kill Mob",
 	}
-	-- 3) Nhóm farm chạy vòng lặp riêng (bật = đang chạy)
 	local INDEPENDENT = {
 		"Auto Quest Dragon Hunter", "Auto Collect Berry", "Auto Chest Hop",
 		"Auto Buy Chip and Attack Law", "Auto UP Observation V2", "Farm Observation",
@@ -1997,8 +1916,6 @@ do
 		"Auto Collect Bone", "Auto Collect Egg",
 	}
 
-	-- ---------- Owner của chuỗi ưu tiên ----------
-	-- Gọi ngay sau dòng `StackFarm = false` của từng nhánh: BananaOwner("Tên toggle")
 	local owner
 	function env.BananaOwner(name)
 		owner = name
@@ -2038,7 +1955,6 @@ do
 		end
 	end
 
-	-- ---------- Theo dõi di chuyển (fly) / đánh mob ----------
 	local lastMoveCF, lastMoveT = nil, 0
 	local lastBoatCF, lastBoatT = nil, 0
 	local lastMob, lastMobT = nil, 0
@@ -2100,7 +2016,6 @@ do
 		end
 	end
 
-	-- Các hàm được định nghĩa muộn nên bọc dần trong vòng lặp (chỉ bọc 1 lần cho mỗi hàm)
 	local wTo, wBackup, wSize, wClick, wShoot, wDetect, wBoat
 	local function hookMovement()
 		if type(toTarget) == "function" and toTarget ~= wTo then
@@ -2133,7 +2048,6 @@ do
 		end
 	end
 
-	-- Tên đảo gần điểm đến nhất
 	local locCache, locT = {}, 0
 	local function placeName(cf)
 		if typeof(cf) ~= "CFrame" then
@@ -2165,7 +2079,6 @@ do
 		return string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
 	end
 
-	-- ---------- Tính toggle farm đang HOẠT ĐỘNG ----------
 	local function on(k)
 		return Settings[k] == true
 	end
@@ -2175,7 +2088,6 @@ do
 		local stackFarm = StackFarm ~= false
 		local stackOther = StackFarmOther ~= false
 
-		-- Chuỗi ưu tiên đang chiếm quyền: chỉ hiện đúng nhánh đang chạy
 		if not stackFarm or not stackOther then
 			local name = owner
 			if not (name and on(name)) then
@@ -2192,7 +2104,6 @@ do
 			end
 		end
 
-		-- Level farm: chỉ chạy khi StackFarm đang mở
 		if stackFarm and on("Start Farm") then
 			if on("Farm Material") then
 				out[#out + 1] = "Farm Material : " .. tostring(Settings["Select Material"] or "?")
@@ -2204,7 +2115,6 @@ do
 			end
 		end
 
-		-- Nhóm bị tạm dừng khi chuỗi ưu tiên chạy
 		if stackOther then
 			for _, k in ipairs(GATED_OTHER) do
 				if on(k) then
@@ -2213,7 +2123,6 @@ do
 			end
 		end
 
-		-- Nhóm chạy vòng lặp riêng
 		for _, k in ipairs(INDEPENDENT) do
 			if on(k) then
 				out[#out + 1] = k
@@ -2239,21 +2148,17 @@ do
 		local act = active[1]
 		local suffix = act and (" | " .. actLabel(act)) or ""
 
-		-- Đang đánh mob / boss (mọi chế độ farm): ghi rõ tên
 		if lastMob and now - lastMobT < 1.5 then
 			return fmt("Fighting {}", tr(lastMob)) .. suffix
 		end
-		-- Đang lái thuyền
 		if lastBoatCF and now - lastBoatT < 1.5 then
 			return fmt("Sailing boat to {}", tr(placeName(lastBoatCF))) .. suffix
 		end
-		-- Đang bay/tween tới điểm đến
 		if lastMoveCF and now - lastMoveT < 1.0 then
 			local find = (lastFind and now - lastFindT < 2) and (" (" .. fmt("find {}", tr(lastFind)) .. ")") or ""
 			return fmt("Traveling to {}", tr(placeName(lastMoveCF))) .. find .. suffix
 		end
 
-		-- Không di chuyển / không đánh: mô tả việc đang làm
 		if not act then
 			return tr("Idle")
 		end
@@ -2267,7 +2172,6 @@ do
 		return fmt("Running : {}", actLabel(act))
 	end
 
-	-- ---------- UI ----------
 	local function getParent()
 		if gethui then
 			local ok, ui = pcall(gethui)
@@ -2377,7 +2281,6 @@ do
 		end
 	end)
 
-	-- ---------- Toggle ở đầu tab Status And Server ----------
 	local SectionStatusUI = PageStatusAndServer.CreateSection("TopiHub Status UI")
 	SectionStatusUI.CreateToggle({
 		Title = "Show TopiHub Status UI",
@@ -2388,7 +2291,6 @@ do
 		gui.Enabled = v
 	end)
 end
--- ===================== end TopiHub Status UI =====================
 SectionStatus = PageStatusAndServer.CreateSection("Status")
 TimerLabel = SectionStatus.CreateLabel({ Title = "Timer" })
 TimerServerLabel = SectionStatus.CreateLabel({ Title = "Timer Server" })
@@ -4273,7 +4175,6 @@ spawn(function()
 	repeat
 		wait(1)
 		if tick() - R > 179 then
-			-- KHÔNG game:Shutdown() nữa (làm văng Roblox khi load chậm sau hop/rejoin/đổi sea)
 			pcall(function()
 				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
 			end)
@@ -4623,7 +4524,6 @@ getgenv().TweenManager = {
 		return d
 	end,
 	CancelCurrent = function()
-		-- Auto Secret Quest dang bat: chi huy tween, giu nguyen fly (FloatForce) + noclip
 		if Settings and Settings["Auto Secret Quest"] then
 			TweenManager.CancelTweenOnly()
 			return
@@ -5277,7 +5177,6 @@ local function B(Z, C, J, F)
 	return r
 end
 
--- ===== SEA1 GATE: Sky2 <-> Sky3 | Xoáy Nước <-> Under City =====
 do
 	local Sea1Gate = {}
 	getgenv().Sea1Gate = Sea1Gate
@@ -5293,10 +5192,10 @@ do
 		XOAY_ENTRANCE_POS = Vector3.new(3864.68798828125, 6.73699951171875, -1926.2139892578125),
 		SKY3_Y = 4000,
 		UNDER_X = 40000,
-		CLOUD_RANGE = 50, -- bán kính quanh SKY2_POS để tìm mây
-		CLOUD_REACH = 10, -- tới gần mây bao nhiêu stud thì bắt đầu đánh
-		CLOUD_ENTRANCE_POS = Vector3.new(-6023.57666015625, 5469.7197265625, 2203.308349609375), -- arg requestEntrance sau khi click mây
-		CLOUD_SKIP_TIME = 10, -- thời gian bỏ qua đám đã click mà không biến mất
+		CLOUD_RANGE = 50,
+		CLOUD_REACH = 10,
+		CLOUD_ENTRANCE_POS = Vector3.new(-6023.57666015625, 5469.7197265625, 2203.308349609375),
+		CLOUD_SKIP_TIME = 10,
 		CLOUD_INTERVAL = 0.1,
 	}
 	local st = { lastClick = 0, arrivedAt = nil, lastEntrance = 0, cloudSkip = setmetatable({}, { __mode = "k" }) }
@@ -5315,8 +5214,6 @@ do
 		B(H, CFrame.new(pos), tonumber(Settings["Speed Tween "]) or 300, 8)
 	end
 
-	-- Mây = workspace.Map.Sky.cloud (nhiều đám trùng tên). Farm như mob: bay tới từng đám còn tồn tại
-	-- trong CLOUD_RANGE quanh SKY2_POS: bay tới -> click -> requestEntrance -> đám tiếp theo
 	local function cloudPos(obj)
 		if obj:IsA("BasePart") then
 			return obj.Position
@@ -5335,7 +5232,6 @@ do
 		vim:SendMouseButtonEvent(x, y, 0, false, game, 1)
 	end
 
-	-- đám cloud còn tồn tại, trong CLOUD_RANGE quanh SKY2_POS, chưa bị skip, gần player nhất
 	local function pickCloud(hrp)
 		local map = workspace:FindFirstChild("Map")
 		local sky = map and map:FindFirstChild("Sky")
@@ -5358,7 +5254,6 @@ do
 		return best
 	end
 
-	-- bay tới điểm chờ -> delay -> requestEntrance (có throttle, tự lặp lại nếu chưa qua được)
 	local function gate(H, waitPos, entrancePos, delay, after)
 		if tick() < (st.cool or 0) then
 			return false
@@ -5373,7 +5268,6 @@ do
 			st.arrivedAt = now
 			return true
 		end
-		-- delay giam xuong 0.3s (tham so delay cu 0.6/0.7 khong dung nua)
 		if now - st.arrivedAt < 0.3 or now - st.lastEntrance < 1.5 then
 			return true
 		end
@@ -5386,12 +5280,10 @@ do
 			return false
 		end
 		st.lastEntrance = now
-		-- chay remote -> delay 0.2 -> chay lai ... cho toi khi player thuc su bi tele (dich chuyen > 100 stud)
-		-- (toi da 20s de khong treo; het gio van chua tele thi tinh la 1 lan that bai nhu cu)
 		local before = H.Position
 		local t0 = tick()
 		while tick() - t0 < 20 do
-			k.LastCall = tick() -- chong watchdog CancelCurrent khi chay blocking
+			k.LastCall = tick()
 			I()
 			pcall(function()
 				game.ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", entrancePos)
@@ -5399,7 +5291,7 @@ do
 			task.wait(0.2)
 			local hrp = getHRP()
 			if not hrp or (hrp.Position - before).Magnitude > 100 then
-				break -- da tele (hoac chet) -> khong chay lan 2, lan 3 nua
+				break
 			end
 		end
 		st.lastEntrance = tick()
@@ -5409,9 +5301,6 @@ do
 		return true
 	end
 
-	-- Main -> Sky3: bay tới Sky2, bắt buộc cầm Melee, rồi với từng đám cloud còn tồn tại:
-	-- bay tới mây -> click -> requestEntrance (CLOUD_ENTRANCE_POS) -> mây tiếp theo, lặp tới khi Y > SKY3_Y
-	-- Trong lúc leo bật getgenv().Sky3Climbing => equiptool (farm) bị chặn, không đổi weapon
 	local function startClickLoop()
 		if st.clicking then
 			return
@@ -5446,7 +5335,6 @@ do
 					if (hrp.Position - pos).Magnitude > CFG.CLOUD_REACH then
 						flyTo(hrp, pos)
 					else
-						-- tới mây: click -> remote -> sang đám khác
 						st.cloudSkip[target] = tick() + CFG.CLOUD_SKIP_TIME
 						target = nil
 						pcall(doClick)
@@ -5473,7 +5361,7 @@ do
 	local function climbSky3(H)
 		st.climbTick = tick()
 		if st.clicking then
-			return true -- loop đang tự bay tới mây, không kéo về SKY2_POS
+			return true
 		end
 		local d = (H.Position - CFG.SKY2_POS).Magnitude
 		if d > 60 then
@@ -5484,7 +5372,6 @@ do
 		return true
 	end
 
-	-- return true = tick này đã bị cổng xử lý, toTarget phải return
 	function Sea1Gate.Step(H, targetPos)
 		local pz, tz = zoneOf(H.Position), zoneOf(targetPos)
 		if pz == tz then
@@ -5493,10 +5380,8 @@ do
 		end
 		getgenv().noclip = true
 		if pz == "Under" then
-			-- Cặp 2: Under City -> Xoáy Nước
 			return gate(H, CFG.XOAY_WAIT_POS, CFG.XOAY_ENTRANCE_POS, 0.6)
 		elseif pz == "Sky3" then
-			-- Cặp 1: Sky3 -> Sky2
 			return gate(H, CFG.SKY_START_POS, CFG.SKY_ENTRANCE_POS, 0.7, function()
 				local hrp = getHRP()
 				if hrp and hrp.Position.Y < CFG.SKY3_Y then
@@ -5504,16 +5389,13 @@ do
 				end
 			end)
 		elseif tz == "Sky3" then
-			-- Cặp 1: Sky (1/2) -> Sky3
 			return climbSky3(H)
 		elseif tz == "Under" then
-			-- Cặp 2: Xoáy Nước -> Under City
 			return gate(H, CFG.UNDER_WAIT_POS, CFG.UNDER_ENTRANCE_POS, 0.6)
 		end
 		return false
 	end
 
-	-- ===== SEA 2: cặp 1 (Flamingo Mansion <-> Flamingo Room), cặp 2 (Cursed Ship <-> Door Ship) =====
 	local C2 = {
 		MANSION_WAIT = Vector3.new(-287, 328, 591),
 		MANSION_ENTRANCE = Vector3.new(-286.9859619140625, 306.13739013671875, 597.8905029296875),
@@ -5529,7 +5411,7 @@ do
 		SHIP_Z = 20000,
 	}
 
-	local SHIP_FLAG = nil -- nếu biết tên cờ unlock của Cursed Ship trong GetUnlockables thì điền vào đây
+	local SHIP_FLAG = nil
 
 	local function horiz(a, b)
 		return Vector3.new(a.X - b.X, 0, a.Z - b.Z).Magnitude
@@ -5554,12 +5436,10 @@ do
 		end
 	end
 
-	-- return true = tick này đã bị cổng xử lý, toTarget phải return
 	function Sea2Gate.Step(H, targetPos)
 		local pos = H.Position
 		local pShip, tShip = pos.Z > C2.SHIP_Z, targetPos.Z > C2.SHIP_Z
 
-		-- Cặp 2: Cursed Ship <-> Door Ship
 		if pShip ~= tShip then
 			if SHIP_FLAG and not getgenv().IsUnlocked(SHIP_FLAG) then
 				return false
@@ -5579,7 +5459,6 @@ do
 			return false
 		end
 
-		-- Cặp 1: Flamingo Mansion <-> Flamingo Room (chỉ khi đã unlock Flamingo, giữ nguyên check cũ)
 		if not getgenv().IsUnlocked("FlamingoAccess") then
 			return false
 		end
@@ -5604,22 +5483,17 @@ do
 	end
 end
 
--- ===== SEA 3 v2: Hydra / Castle on the Sea / Mansion / Tiki (Castle là trung tâm) =====
 do
 	local Sea3Gate = {}
 	getgenv().Sea3Gate = Sea3Gate
 	local V3 = Vector3.new
 
-	-- ===== QUY TAC CHUNG CHO MOI "DUONG TAT" (hub Sea3, tau ngam, portal, requestEntrance) =====
-	-- Mac dinh chi so TONG QUANG DUONG BAY: bay thang gan hon thi bay thang, qua duong tat gan hon thi qua duong tat.
-	-- direct = player->dich, viaFly = tong cac doan bay that khi dung duong tat. (overheadSec/margin mac dinh 0, chi la tuy chon tinh them)
 	getgenv().ShortcutWorth = function(direct, viaFly, overheadSec)
 		local speed = tonumber(Settings["Speed Tween "]) or 300
 		local margin = tonumber(getgenv().Sea3RouteMargin) or 0
 		return viaFly + (overheadSec or 0) * speed + margin < direct
 	end
 
-	-- mỗi hop = 1 cặp cổng: bay tới `fly` -> chờ 0.6 -> (requestEntrance | nhảy) -> chờ 0.6 -> Y+100
 	local HOP = {
 		["Castle>Hydra"] = { to = "Hydra", fly = V3(-5027.0302734375, 330, -3206.70361328125), ent = V3(5662, 1013, -338), need = "indra" },
 		["Hydra>Castle"] = { to = "Castle", fly = V3(5659, 1030, -334), ent = V3(-5021, 314, -3194), need = "indra" },
@@ -5627,21 +5501,19 @@ do
 		["Castle>Mansion"] = { to = "Mansion", fly = V3(-5060.41162109375, 330, -3193.224853515625), ent = V3(-12465, 374, -7554), need = "indra" },
 		["Tiki>Castle"] = { to = "Castle", fly = V3(-16800, 59, 291), jump = "Castle", need = "tiki" },
 		["Castle>Tiki"] = { to = "Tiki", fly = V3(-5098, 316, -3179), jump = "Tiki", need = "tiki" },
-		-- tuyến tàu ngầm: Tiki -> Submerged Island (điểm bay tới lấy từ khối tele cũ của script)
 		["Tiki>Submerged"] = { to = "Submerged", fly = V3(-16269.4082, 23.9799957, 1371.66235), sub = true, need = "tiki" },
 	}
 	local LIFT = 100
 
-	-- điểm đại diện từng đảo (xác định player "gần" đảo nào)
 	local REFS = {
 		Hydra = { V3(3399, 72, 1572), V3(5245, 602, 251), V3(5288, 1011, 392), V3(5661, 1013, -334), V3(5659, 1030, -334) },
 		Castle = { V3(-5500, 314, -2855), V3(-5055, 314, -3179), V3(-5027, 318, -3206), V3(-5060, 330, -3193), V3(-5098, 316, -3179) },
 		Mansion = {
 			V3(-12463, 375, -7549), V3(-12548, 337, -7481), V3(-12463.6, 398, -7566),
-			V3(-12538, 339, -7817), -- Turtle Mansion
-			V3(-12008, 339, -9179), -- Turtle Center
-			V3(-10164, 340, -8321), -- Turtle Entrance
-			V3(-12857, 853, -10715), -- Turtle Mountain
+			V3(-12538, 339, -7817),
+			V3(-12008, 339, -9179),
+			V3(-10164, 340, -8321),
+			V3(-12857, 853, -10715),
 		},
 		Tiki = { V3(-16204, 9, 479), V3(-16456, 530, 436), V3(-16800, 59, 291) },
 	}
@@ -5667,7 +5539,6 @@ do
 		return best, bd
 	end
 
-	-- đảo `name` có dùng được làm đích trung gian không (Castle luôn dùng được)
 	local function hubOpen(name)
 		if name == "Castle" then
 			return true
@@ -5682,7 +5553,6 @@ do
 		return true
 	end
 
-	-- đảo gần nhất trong các đảo đang mở (đích gần Tiki mà Tiki đóng -> lấy đảo gần nhất còn lại, thường là Castle)
 	local function nearestOpenHub(pos)
 		local best, bd
 		for name, refs in pairs(REFS) do
@@ -5696,7 +5566,6 @@ do
 		return best
 	end
 
-	-- các đảo đi bằng tàu ngầm (npc ở Submerged Island): tên dùng cho InitiateTeleport + vị trí đại diện
 	local SUB_ISLANDS = {
 		["Turtle Mountain"] = V3(-9537, 7, -8348),
 		["Hydra Town"] = V3(3251, 5, 2431),
@@ -5710,10 +5579,8 @@ do
 		["Cake Land"] = V3(-1989, 9, -11411),
 	}
 
-	-- gần nhất trong (các đảo tàu ngầm + các đảo cổng đang mở); trả về tên đảo tàu ngầm nếu nó thắng
 	local CAKE_ARENA = Vector3.new(-1990.67, 4532.97, -14973.67)
 	local function nearestNode(pos, onlyOpen)
-		-- arena Cake Prince nằm trên trời nên "gần nhất" bị lệch sang Chocolate Land -> coi như Cake Land
 		if (pos - CAKE_ARENA).Magnitude <= 1000 then
 			return "Cake Land"
 		end
@@ -5735,13 +5602,12 @@ do
 		return best
 	end
 
-	-- dùng cho cả Sea3Gate.Step và khối Submerged trong toTarget
 	getgenv().SubmarineDest = function(pos)
 		if not Settings["Use Submarine Teleport"] then
 			return nil
 		end
 		if not getgenv().IsTikiBossKilled() then
-			return nil -- cổng Tiki đóng thì không đi tàu ngầm được
+			return nil
 		end
 		local best = nearestNode(pos, true)
 		if SUB_ISLANDS[best] then
@@ -5750,7 +5616,6 @@ do
 		return nil
 	end
 
-	-- Castle làm trung tâm: A -> Castle -> B
 	local function route(ph, dh)
 		local hops = {}
 		if ph ~= "Castle" then
@@ -5777,8 +5642,6 @@ do
 		end
 	end
 
-	-- watchdog của script sẽ CancelCurrent (xoá FloatForce, bật CanCollide) nếu toTarget
-	-- không được gọi trong 2s. Vì Sea3 chạy blocking nên phải tự làm mới LastCall.
 	local function alive()
 		k.LastCall = tick()
 		getgenv().noclip = true
@@ -5835,7 +5698,6 @@ do
 		vim:SendKeyEvent(false, "Space", false, game)
 	end
 
-	-- đã gần thì thôi, chưa gần thì nhảy lặp lại ("gần" = đảo gần nhất là `name`)
 	local function jumpUntilNear(name, timeout)
 		local t0 = tick()
 		while tick() - t0 < (timeout or 25) do
@@ -5863,7 +5725,6 @@ do
 		if not flyTo(h.fly) then
 			return false
 		end
-		-- bay toi -> delay 0.3 (nhay thi giu 0.6 nhu cu) -> chay remote -> delay 0.2 -> chay lai cho toi khi tele duoc
 		hold(h.jump and 0.6 or 0.3)
 		if h.sub then
 			local b0 = getHRP()
@@ -5895,7 +5756,6 @@ do
 			before = before and before.Position
 			local moved = false
 			local attempt, t0 = 0, tick()
-			-- lan dau da tele duoc thi thoi; chua duoc thi cu chay lai moi 0.2s (toi da 30s)
 			while tick() - t0 < 30 and not cancelled do
 				attempt = attempt + 1
 				I()
@@ -5935,10 +5795,6 @@ do
 		cancelled = true
 	end
 
-	-- ===== CHECK QUANG DUONG: di qua hub co dang khong? =====
-	-- Moi hop = bay toi `fly` -> bi dich chuyen (tele gan nhu tuc thoi) -> ha canh o `ent` (hop `jump` khong co ent
-	-- thi lay diem dai dien cua dao dich). Tong doan BAY THAT = player->fly1 + ent1->fly2 + ... + entN->dich.
-	-- Chi di hub khi (tong doan bay + thoi gian cho moi hop quy ra stud) ngan hon bay thang player->dich.
 	local function landingOf(h)
 		if h.ent then
 			return h.ent + V3(0, LIFT, 0)
@@ -5946,7 +5802,6 @@ do
 		local r = REFS[h.to]
 		return r and r[1] or h.fly
 	end
-	-- tau ngam: sau hop "Tiki>Submerged" ha canh trong pocket Submerged, bay toi npc roi InitiateTeleport toi dao `island`
 	local SUB_POCKET, SUB_NPC = V3(11538.6, -2154.7, 9827.3), V3(11427.9, -2156.4, 9726.2)
 	local function routeFlyDist(pos, hops, targetPos, island)
 		local cur, dist = pos, 0
@@ -5962,7 +5817,6 @@ do
 		return dist + (cur - targetPos).Magnitude
 	end
 
-	-- return true = cổng đã xử lý (hoặc đang bận), toTarget phải return
 	function Sea3Gate.Step(H, targetPos)
 		if running then
 			return true
@@ -5971,13 +5825,12 @@ do
 			return false
 		end
 		if (targetPos - Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)).Magnitude <= 3000 then
-			return false -- đích là Temple of Time: khối vào đền lo, không dùng cổng/tàu ngầm
+			return false
 		end
 		local pos = H.Position
 		local hops
 		local island = getgenv().SubmarineDest(targetPos)
 		if island then
-			-- đích gần đảo đi tàu ngầm: tới Submerged bằng logic trung gian, rồi khối Submerged trong toTarget lo phần npc
 			if nearestNode(pos, false) == island then
 				why("player và đích cùng gần " .. island)
 				return false
@@ -5993,8 +5846,8 @@ do
 			hops[#hops + 1] = "Tiki>Submerged"
 			dbg("tàu ngầm ->", island, "route", ph, table.concat(hops, " | "))
 		else
-			local dh = nearestOpenHub(targetPos) -- đích gần đảo (đang mở) nào
-			local ph = nearestHub(pos) -- player gần đảo nào
+			local dh = nearestOpenHub(targetPos)
+			local ph = nearestHub(pos)
 			if getgenv().DebugSea3 and nearestHub(targetPos) ~= dh then
 				dbg("đích gần", nearestHub(targetPos), "nhưng cổng đang đóng -> dùng", dh)
 			end
@@ -6005,7 +5858,6 @@ do
 			hops = route(ph, dh)
 			dbg("route", ph, "->", dh, table.concat(hops, " | "))
 		end
-		-- check unlock: chỉ cần 1 hop còn đóng là bỏ cả chuỗi và bay thẳng
 		for _, key in ipairs(hops) do
 			local need = HOP[key].need
 			if need == "indra" and not getgenv().IsUnlocked("DefeatedIndraTrueForm") then
@@ -6018,11 +5870,10 @@ do
 			end
 		end
 
-		-- check quang duong (ap dung ca route hub lan route tau ngam): khong ngan hon bay thang thi bo, bay thang toi dich
 		do
 			local direct = (pos - targetPos).Magnitude
 			local viaFly = routeFlyDist(pos, hops, targetPos, island)
-			local steps = #hops + (island and 1 or 0) -- tau ngam them 1 buoc InitiateTeleport
+			local steps = #hops + (island and 1 or 0)
 			local overheadSec = steps * (tonumber(getgenv().Sea3HopOverheadSec) or 0)
 			if not getgenv().ShortcutWorth(direct, viaFly, overheadSec) then
 				why(string.format("route %s dai hon bay thang (qua tele: bay %.0f + cho %.0fs >= thang %.0f) -> bay thang", table.concat(hops, " | "), viaFly, overheadSec, direct))
@@ -6050,18 +5901,16 @@ do
 			fails = fails + 1
 			if fails >= 2 then
 				fails = 0
-				cool = tick() + 30 -- fail 2 lần liên tiếp: nghỉ 30s để toTarget bay bình thường
+				cool = tick() + 30
 			end
 		end
 		return true
 	end
 end
 
--- ===== CLICK VÀO TOẠ ĐỘ WORLD (phá tree Tyrant bằng Skull Guitar, thay cho SpamGunSkullGuitar bị game fix) =====
 do
 	local st = { pos = nil, tick = 0, running = false }
 
-	-- đổi toạ độ world của tree -> toạ độ trên màn hình; nếu tree ngoài màn hình thì quay camera về phía tree
 	local function screenOf(pos)
 		local cam = workspace.CurrentCamera
 		local v = cam:WorldToViewportPoint(pos)
@@ -6078,7 +5927,6 @@ do
 		return x, y
 	end
 
-	-- gọi mỗi tick khi đang đứng gần tree: mỗi 0.7s mới click 1 lần (không click liên tục) vào vị trí tree trên màn hình
 	getgenv().ClickWorldPos = function(pos)
 		local now = tick()
 		if now - (st.last or 0) < (getgenv().TreeClickInterval or 0.7) then
@@ -6095,13 +5943,12 @@ do
 	end
 end
 
--- ===== VÀO TEMPLE OF TIME (game fix vào từ xa: phải bay tới npc rồi mới chạy code vào đền) =====
 do
 	local NPC = Vector3.new(3033, 2281, -7324)
 	local running = false
 
 	local function alive()
-		k.LastCall = tick() -- chống watchdog CancelCurrent khi chạy blocking
+		k.LastCall = tick()
 		getgenv().noclip = true
 		I()
 	end
@@ -6120,14 +5967,12 @@ do
 		end
 	end
 
-	-- entry = toạ độ vào đền (Temple Clock) lấy từ bảng entrance trong toTarget
 	getgenv().EnterTempleOfTime = function(entry)
 		if running then
 			return
 		end
 		running = true
 		pcall(function()
-			-- 1) fly tới npc
 			local t0, arrived = tick(), false
 			while tick() - t0 < 120 do
 				local hrp = getHRP()
@@ -6146,14 +5991,13 @@ do
 				dbg("không bay tới được npc")
 				return
 			end
-			-- 2) load map đền (mượn model từ MapStash) -> delay 0.6 -> RaceV4Progress Teleport -> delay 0.6
 			BorrowTempleOfTime()
 			hold(0.3)
 			local inside = false
 			local attempt, tStart = 0, tick()
 			while tick() - tStart < 30 do
 				attempt = attempt + 1
-				BorrowTempleOfTime() -- no-op nếu model đã được mượn
+				BorrowTempleOfTime()
 				I()
 				local ok, res = pcall(function()
 					return game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Teleport")
@@ -6170,7 +6014,6 @@ do
 				dbg("RaceV4Progress Teleport không đưa được vào đền")
 				return
 			end
-			-- 3) Y + 30 -> đích (toTarget các lượt sau bay tiếp)
 			local hrp = getHRP()
 			if hrp then
 				hrp.CFrame = hrp.CFrame + Vector3.new(0, 30, 0)
@@ -6181,7 +6024,6 @@ do
 	end
 end
 
--- ===== CHECK UNLOCK LIVE (GetUnlockables) =====
 do
 	local cache, last = {}, {}
 	getgenv().IsUnlocked = function(flag)
@@ -6205,7 +6047,6 @@ do
 	end
 end
 
--- ===== CHECK ĐÃ ĐÁNH BOSS TIKI (mở SubmarineWorkerSpeak) =====
 do
 	local cache, lastAsk = false, 0
 	getgenv().IsTikiBossKilled = function()
@@ -6220,7 +6061,7 @@ do
 			local ev = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SubmarineWorkerSpeak")
 			return ev and ev:InvokeServer("AskKilledTikiBoss")
 		end)
-		getgenv().TikiBossRaw = res -- giá trị server trả về, dùng để kiểm tra
+		getgenv().TikiBossRaw = res
 		if getgenv().DebugTikiBoss then
 			print("[TikiBoss]", ok, typeof(res), tostring(res))
 		end
@@ -6264,7 +6105,6 @@ function toTarget(P, e)
 	if not H:FindFirstChild("FloatForce") then
 		y(H)
 	end
-	-- Dodge skill Cake Prince (CHI Cake Prince): khong tween nua, teleport thang toi boss + (0, -50, 0)
 	do
 		local cpMob = getgenv().DodgeCakePrinceMob
 		if ReadyToDodge and cpMob and cpMob.Parent and cpMob:FindFirstChild("HumanoidRootPart") then
@@ -6534,7 +6374,6 @@ function toTarget(P, e)
 	end
 	Z = CFrame.new()
 	Z = (function() if ReadyToDodge then return (CFrame.new(0, 200, 0)) else return (function() if G then return (CFrame.new(0, Settings["Distance Teleport Y"] or 800, 0)) else return Z end end)() end end)()
-	-- Dodge skill mob/Terrorshark: tween speed 1000 de ne va ha xuong (Seabeast khong dung ReadyToDodge nen giu speed slider)
 	if ReadyToDodge then getgenv().DodgeDescend = true end
 	local dodgeSpd = (ReadyToDodge or getgenv().DodgeDescend) and not G and 1000 or nil
 	Y, e = dodgeSpd or Settings["Speed Tween "] or 300, P * Z
@@ -6582,7 +6421,6 @@ spawn(function()
 				end
 			end
 			if Settings["Auto rejoin Disconnect"] then
-				-- ErrorPrompt chi ton tai khi bi disconnect -> phai check truoc, khong thi bao loi lien tuc
 				local pg = game:GetService("CoreGui"):FindFirstChild("RobloxPromptGui")
 				local ov = pg and pg:FindFirstChild("promptOverlay")
 				local ep = ov and ov:FindFirstChild("ErrorPrompt")
@@ -6940,8 +6778,6 @@ getgenv().SpamGunDragonStorm = function(E)
 	L.Remotes.Validator2:FireServer(math.floor(d / V * 16777215), P)
 	m.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(E.Position, { E })
 end
--- ===== SHOOTGUN AURA (logic bắn gun lấy từ script fast attack, chỉ giữ phần bắn gun) =====
--- Target: mob, ship (Engine), sea beast, leviathan (Leviathan / Tail / Segment). Không bắn người chơi.
 do
 	local RS = game:GetService("ReplicatedStorage")
 	local VIM = game:GetService("VirtualInputManager")
@@ -6967,13 +6803,12 @@ do
 		end
 	end
 
-	-- trả về part để bắn nếu model còn sống, không thì nil
 	local function shootPart(m)
 		if not m:IsA("Model") then
 			return
 		end
 		local hum = m:FindFirstChildOfClass("Humanoid")
-		if hum then -- mob thường, Terrorshark
+		if hum then
 			if hum.Health <= 0 then
 				return
 			end
@@ -6984,7 +6819,7 @@ do
 			return
 		end
 		local n = m.Name
-		if n:find("Leviathan", 1, true) then -- Leviathan / Leviathan Tail / Leviathan Segment
+		if n:find("Leviathan", 1, true) then
 			if n == "Leviathan" and m:GetAttribute("Armored") then
 				return
 			end
@@ -6993,15 +6828,14 @@ do
 			end
 			return m:FindFirstChild("Hitbox11") or m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart
 		end
-		if m:FindFirstChild("Engine") and hv then -- ship
+		if m:FindFirstChild("Engine") and hv then
 			return m.Engine
 		end
-		if m:FindFirstChild("HealthBBG") then -- sea beast
+		if m:FindFirstChild("HealthBBG") then
 			return m:FindFirstChild("HumanoidRootPart")
 		end
 	end
 
-	-- target gần nhất trong phạm vi shootgun (mặc định 500 studs)
 	getgenv().GetShootGunTarget = function(range)
 		local char = lp.Character
 		local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -7025,7 +6859,6 @@ do
 		return best
 	end
 
-	-- bắn 1 phát: chỉ khi đang cầm Dragonstorm
 	getgenv().ShootGunDS = function(part)
 		if not part then
 			return
@@ -7415,7 +7248,6 @@ SettingFarmMainSection.CreateToggle(
 			spawn(function()
 				while Settings["Kill Aura With DragonStorm"] and task.wait(getgenv().ShootGunDelay or 0.02) do
 					pcall(function()
-						-- chỉ chạy khi đang cầm Dragonstorm và có target trong phạm vi shootgun
 						if t.Character and t.Character:FindFirstChild("Dragonstorm") then
 							local part = getgenv().GetShootGunTarget()
 							if part then
@@ -7430,14 +7262,12 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Kill Aura With DragonStorm", I)
 	end
 )
--- Use Dragonstorm For Sea Event: tu chay logic shoot gun khi farm sea event (khong phu thuoc toggle Kill Aura With DragonStorm)
 getgenv().SeaEventDSFarmTick = 0
 if not getgenv().__SeaEventDSAuraRunning then
 	getgenv().__SeaEventDSAuraRunning = true
 	spawn(function()
 		while task.wait(getgenv().ShootGunDelay or 0.02) do
 			pcall(function()
-				-- Kill Aura With DragonStorm dang bat thi no da tu ban roi, khong ban doi
 				if
 					Settings["Use Dragonstorm For Sea Event"]
 					and not Settings["Kill Aura With DragonStorm"]
@@ -7553,7 +7383,6 @@ game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(descendant
 
 	if flag and descendant.Parent.Parent == AttackingMob then
 		Doding = true
-		-- chi Cake Prince: luu boss de toTarget teleport toi boss + (0, -30, 0) trong luc ne; mob khac giu nguyen +200 Y
 		getgenv().DodgeCakePrinceMob = (AttackingMob.Name == "Cake Prince") and AttackingMob or nil
 		ReadyToDodge = true
 		local now = tick()
@@ -7724,10 +7553,6 @@ _("Melee", { "Z", "X", "C" })
 _("Sword", { "Z", "X" })
 _("Gun", { "Z", "X" })
 _("Blox Fruit", { "Z", "X", "C", "V", "F" })
--- ===== USE BUDDHA WITH FARMING =====
--- Phat V1: workspace.Characters.<ten>["Body Colors"] co tat ca mau = New Yeller (255,255,0)
--- Phat V2: "Body Colors" bien mat + xuat hien "FakeHead"
--- V1/V2 -> farm nhu cu. Chua phai -> dung fly, trang bi Buddha-Buddha, bam Z, cho thanh cong -> delay 0.6 -> farm
 do
 	local Players = game:GetService("Players")
 	local VIM = game:GetService("VirtualInputManager")
@@ -7748,7 +7573,6 @@ do
 			and math.floor(c.B * 255 + 0.5) == 0
 	end
 
-	-- tra ve "V1" / "V2" / nil (chua bat phat)
 	local function buddhaState()
 		local ch = charModel()
 		if not ch then
@@ -7769,7 +7593,6 @@ do
 		return ch:FindFirstChild("FakeHead") and "V2" or nil
 	end
 
-	-- ten fruit dang co (Backpack hoac dang cam), nil neu khong co fruit
 	getgenv().BuddhaCurrentFruit = function()
 		local p = Players.LocalPlayer
 		for _, holder in ipairs({ p.Character, p:FindFirstChild("Backpack") }) do
@@ -7809,13 +7632,12 @@ do
 		VIM:SendKeyEvent(false, "Z", false, game)
 	end
 
-	-- goi truoc khi danh mob (ClickM1...). Chi fly (khong danh mob) thi khong bi goi nen khong kich hoat.
 	getgenv().BuddhaFarmEnsure = function()
 		if running or not Settings[KEY] or getgenv().Sky3Climbing or tick() < retryAt then
 			return
 		end
 		if buddhaState() then
-			return -- da la Phat V1 hoac V2 -> farm nhu cu
+			return
 		end
 		local ch = Players.LocalPlayer.Character
 		local hum = ch and ch:FindFirstChildOfClass("Humanoid")
@@ -7825,7 +7647,7 @@ do
 		running = true
 		pcall(function()
 			pcall(function()
-				TweenManager.CancelCurrent() -- dung fly truoc khi bat phat
+				TweenManager.CancelCurrent()
 			end)
 			local ok = false
 			for _ = 1, 6 do
@@ -7837,7 +7659,7 @@ do
 				pressZ()
 				local t0 = tick()
 				while tick() - t0 < 1.2 do
-					if buddhaState() then -- V1 (mau vang) hoac V2 (mat Body Colors + co FakeHead)
+					if buddhaState() then
 						ok = true
 						break
 					end
@@ -7848,9 +7670,9 @@ do
 				end
 			end
 			if ok then
-				task.wait(0.6) -- delay 0.6 roi farm binh thuong
+				task.wait(0.6)
 			else
-				retryAt = tick() + 5 -- that bai: nghi 5s roi thu lai, khong chan farm mai
+				retryAt = tick() + 5
 			end
 		end)
 		running = false
@@ -8187,9 +8009,6 @@ GetLevelQuestMob = function()
 	end
 end
 
--- FIX: doc ten mob cua quest DANG CAM.
--- 1) doc chinh xac tu GuideModule QuestData
--- 2) khong co thi quet text UI quest, doi chieu voi Task key cua toan bo quest (lay ten dai nhat de tranh nham "Pirate" / "Swan Pirate")
 local _questMobCache = { text = nil, mob = nil }
 function GetCurrentQuestMob()
 	local exact = GetNameDoubleQuest()
@@ -8671,10 +8490,8 @@ function FarmMethod()
 		end
 	end
 	if V == nil and HasQuest() then
-		-- FIX: dang co quest -> farm DUNG mob trong quest cho toi khi hoan thanh, len level cung khong doi quest/mob
 		f = GetCurrentQuestMob()
 		if not f then
-			-- chua doc duoc ten mob tu quest (UI chua kip load) -> doi, khong farm bay mob theo level
 			task.wait(0.2)
 			return
 		end
@@ -8765,7 +8582,6 @@ function FarmMethod()
 			if CheckNameBoss("Cake Prince") then
 				local V = CheckNameBoss("Cake Prince")
 
-				-- ===== THÊM: bay tới cổng -> delay 1.5s -> check Y > 4000 mới farm boss, chưa thì bay lại cổng =====
 				local mirror = workspace.Map:FindFirstChild("CakeLoaf")
 					and workspace.Map.CakeLoaf:FindFirstChild("BigMirror")
 					and workspace.Map.CakeLoaf.BigMirror:FindFirstChild("Main")
@@ -8773,29 +8589,26 @@ function FarmMethod()
 
 				if mirror and root and root.Position.Y <= 4000 then
 					repeat
-						-- bay tới cổng
 						repeat
 							task.wait()
 							root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
 							if not root then
 								break
 							end
-							toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0)) -- toTarget tự bay tới cổng như cũ
+							toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
 						until (mirror.Position - root.Position).Magnitude <= 20
 							or root.Position.Y > 4000
 							or not IsMobAlive(V)
 							or not Settings["Start Farm"]
 							or not StackFarm
-						task.wait(1.5) -- delay sau khi tới cổng
+						task.wait(1.5)
 						root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-					-- check sau delay: Y chưa > 4000 thì lặp lại bay vào cổng
 					until not root
 						or root.Position.Y > 4000
 						or not IsMobAlive(V)
 						or not Settings["Start Farm"]
 						or not StackFarm
 				end
-				-- ===== HẾT PHẦN THÊM =====
 
 				repeat
 					task.wait()
@@ -10110,13 +9923,10 @@ task.spawn(function()
 	end
 end)
 FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Farming Other" })
--- ===== Secret Quest (39 hidden quests) - thay thế Event Easter =====
 
--- ========== SHIMS (map Vxeze -> BananaCat) ==========
 do
 	localPlayer = t or game.Players.LocalPlayer
 
-	-- Movement
 	ToTarget = ToTarget or toTarget or getgenv().toTarget or function(cf)
 		if type(toTarget) == "function" then
 			return toTarget(cf)
@@ -10126,7 +9936,6 @@ do
 		end
 	end
 
-	-- Combat
 	SizePart = SizePart or sizepart
 	if type(getgenv().ClickM1) == "function" then
 		ClickM1 = getgenv().ClickM1
@@ -10136,7 +9945,6 @@ do
 		UsedualFlock = getgenv().UsedualFlock
 	end
 
-	-- Sea 1 gate (BananaCat: CheckPlaceId3 = Sea1)
 	Place_Id = Place_Id or {}
 	Place_Id.sea1 = Place_Id.sea1 or function()
 		return game.PlaceId == (getgenv().CheckPlaceId3 or 2753915549)
@@ -10150,7 +9958,6 @@ do
 		return game.PlaceId == (getgenv().CheckPlaceId or 7449423635)
 	end
 
-	-- Notify
 	VxezeNotify = VxezeNotify or function(title, desc, kind, extra)
 		local text = tostring(title or "")
 		if desc and tostring(desc) ~= "" then
@@ -10169,7 +9976,6 @@ do
 		end
 	end
 
-	-- Inventory list (BananaCat uses local B() in some scopes; rebuild if missing)
 	if type(GetInventoryItems) ~= "function" then
 		GetInventoryItems = function()
 			local ok, list = pcall(function()
@@ -10205,7 +10011,6 @@ do
 		end
 	end
 
-	-- Tween helpers
 	StopTweenNow = StopTweenNow or function()
 		pcall(function()
 			if TweenManager and TweenManager.CancelCurrent then
@@ -10230,7 +10035,6 @@ do
 		end)
 	end
 
-	-- Soft require / gate helper used by original toggle
 	EnforceGate = EnforceGate or function(_, name, ok, msg)
 		if not ok then
 			SaveSettings(name, false)
@@ -10240,15 +10044,12 @@ do
 		return true
 	end
 
-	-- Log helper
 	VxezeLog = VxezeLog or function(a, b)
 		print("[SecretQuest]", tostring(a), tostring(b))
 	end
 
-	-- ReplicatedStorage alias if missing
 	ReplicatedStorage = ReplicatedStorage or game:GetService("ReplicatedStorage")
 
-	-- Helper thiếu trong BananaCat (lấy từ Vxeze)
 	VirtualInputManager = VirtualInputManager or game:GetService("VirtualInputManager")
 	NoclipChanged = NoclipChanged or setmetatable({}, { __mode = "k" })
 
@@ -10275,7 +10076,6 @@ do
 	end
 end
 
--- ========== UI: đầu tab Farming Other ==========
 
 HiddenEventSection = FarmotherMain.CreateSection("Secret Quest")
 StatusHiddenProgress = HiddenEventSection.CreateLabel({ Title = "Secret Quest : 0/39 Quests" })
@@ -12913,8 +12713,6 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 	end
 
 	QueueHiddenReload = function()
-		-- Không queue_on_teleport lần 2 (tránh script chạy 2 lần sau teleport / load nhầm BF-VxezeHub.lua).
-		-- Việc tự chạy lại sau hop đã do toggle "Auto Load Script" của Banana đảm nhiệm.
 		return true
 	end
 
@@ -15031,16 +14829,13 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 
 				if (progress.SecondsRemaining or 0) > 0 then
 					local time_ = lookout.time
-					-- còn lại = giây server báo - thời gian đã trôi qua kể từ lúc hỏi
 					local n = progress.SecondsRemaining - (tick() - time_)
 
 					if n > 0 then
-						-- nhớ giờ Captain sẵn sàng để quay lại làm ngay khi tới giờ
 						HiddenEvent.readyAt = HiddenEvent.readyAt or {}
 						HiddenEvent.readyAt.Lookout = tick() + n
 					end
 
-					-- chưa tới giờ => skip để làm quest khác (không đứng chờ)
 					return "Captain needs time (" .. FormatMagnetTime(math.max(0, n)) .. ")", n > 0
 				end
 
@@ -15652,7 +15447,6 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 	HiddenRetryDelay = function(arg)
 		local readyAt = HiddenEvent.readyAt and HiddenEvent.readyAt[arg.Name]
 		if readyAt then
-			-- biết chính xác bao giờ làm được -> chỉ skip tới lúc đó
 			return math.max(readyAt - tick(), 5)
 		end
 		local retryOverride = HiddenEvent.retryOverride and HiddenEvent.retryOverride[arg.Name]
@@ -15764,7 +15558,6 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		HiddenNotify(current .. " got stuck on \"" .. tostring(stall.step) .. "\", trying another quest", current .. "stall", "warning")
 	end
 
-	-- Quest đang bị skip (chờ) mà đã làm được => gỡ skip + đẩy lên đầu hàng đợi
 	HiddenWakeBoost = function(name)
 		HiddenEvent.readyBoost = HiddenEvent.readyBoost or {}
 		return tick() < (HiddenEvent.readyBoost[name] or 0)
@@ -15795,12 +15588,10 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 			local blocked = HiddenEvent.waiting[name] ~= nil or HiddenEvent.readyAt[name] ~= nil
 
 			if progress[key] ~= true and skipped and blocked and tick() >= (HiddenEvent.wakeCheck[name] or 0) then
-				-- (a) tới giờ hẹn (vd Lookout: Captain hết cooldown)
 				local readyAt = HiddenEvent.readyAt[name]
 				if readyAt and tick() >= readyAt then
 					wake(quest, "timer done")
 				else
-					-- (b) moment của quest vừa load
 					local moment = GetHiddenMoment(name)
 					local up = moment and (not quest.HintIsland or moment.Active)
 					if up and HiddenEvent.wokeMoment[name] ~= moment then
@@ -15808,7 +15599,6 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 						wake(quest, "quest appeared")
 					elseif not up then
 						HiddenEvent.wokeMoment[name] = nil
-						-- (c) điều kiện Precheck đã thoả (đêm, boss hint, ...)
 						if quest.Precheck and not readyAt and tick() >= (HiddenEvent.precheckAt and HiddenEvent.precheckAt[name] or 0) then
 							HiddenEvent.precheckAt = HiddenEvent.precheckAt or {}
 							HiddenEvent.precheckAt[name] = tick() + 10
@@ -15887,7 +15677,6 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 				end
 
 				if readyBoost then
-					-- quest vừa hết chờ: ưu tiên làm trước (sau Rescue Hasan)
 					tbl10[v8] = -1.5
 				elseif hintIsland then
 					tbl10[v8] = -1
@@ -16224,7 +16013,6 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 	end)
 
 
--- ========== BananaCat UI toggles ==========
 HiddenEventSection.CreateToggle({
 	Title = "Hop Server For Secret Quest",
 	Desc = "Hop khi không có quest / giờ chết",
@@ -16233,7 +16021,6 @@ HiddenEventSection.CreateToggle({
 	SaveSettings("Hop Server For Secret Quest", v)
 end)
 
--- Mirror Vxeze setting key used inside AutoHiddenEvent hop logic
 if Settings["Hidden Hop Dead Hour"] == nil then
 	Settings["Hidden Hop Dead Hour"] = true
 end
@@ -16265,7 +16052,7 @@ HiddenEventSection.CreateToggle({
 		HiddenEvent.running = false
 		pcall(HiddenRelease)
 		pcall(function()
-			TweenManager.CancelCurrent() -- tat toggle -> dung fly
+			TweenManager.CancelCurrent()
 		end)
 		return
 	end
@@ -16288,7 +16075,6 @@ HiddenEventSection.CreateToggle({
 	task.spawn(function()
 		while Settings["Auto Secret Quest"] and task.wait(0.15) do
 			local ok, result
-			-- Tôn trọng StackFarmOther của BananaCat (ưu tiên chuỗi farm khác)
 			local stackOk = (StackFarmOther ~= false) and (getgenv().StackFarmOther ~= false)
 			if stackOk then
 				ok, result = pcall(AutoHiddenEvent)
@@ -17241,7 +17027,6 @@ game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connec
 			wait()
 		until y:FindFirstChild("TranslateMe")
 		local label = y.TranslateMe
-		-- thông báo hoàn thành là 1 khối nhiều dòng (Obtained.../Task completed!/Head back to the Dojo...), nên phải tìm chuỗi con chứ không so sánh bằng
 		local function CheckQuestDone()
 			local text = tostring(label.Text):gsub("<[^>]+>", ""):gsub("{[^}]*}", "")
 			if string.find(text, "Head back to the Dojo", 1, true) then
@@ -17260,7 +17045,6 @@ game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connec
 		end
 	end
 end)
--- thông báo hoàn thành quest đi qua remote CommE: ("Notify", "<Color=Green>Task completed!<Color=/>") rồi ("Notify", "Head back to the Dojo to complete more tasks.")
 task.spawn(function()
 	local CommE = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommE")
 	CommE.OnClientEvent:Connect(function(kind, text)
@@ -17327,7 +17111,6 @@ function DetectEmberTemplate()
 end
 function AutoDragonHunter()
 	local y = DetectNpc("Dragon Hunter")
-	-- nhặt ember trước (cả lúc quest vừa xong và chưa nhận quest mới)
 	local ember = DetectEmberTemplate()
 	if ember then
 		Instance.new("IntValue", ember).Name = "Ignored"
@@ -17425,7 +17208,6 @@ function AutoDragonHunter()
 			if Y then
 				Instance.new("IntValue", Y).Name = "Ignored"
 				local H = tick()
-				-- có Skull Guitar: dùng logic phá tree của farm Tyrant (cầm đàn + click vào tree); không có thì spam skill như cũ
 				local hasGuitar = CheckItemInventory("Skull Guitar")
 				local timeout = hasGuitar and 30 or 15
 				repeat
@@ -17439,7 +17221,6 @@ function AutoDragonHunter()
 								:InvokeServer(unpack({ [1] = "LoadItem", [2] = "Skull Guitar" }))
 						else
 							equiptool(NameWeapon("Gun"))
-							-- click vào model player (HumanoidRootPart) thay vì click vào model tree
 							local hrp = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
 							if hrp then
 								getgenv().ClickWorldPos(hrp.Position)
@@ -17737,7 +17518,29 @@ RaidLawSection.CreateToggle(
 	end
 )
 FarmObservationSection = FarmotherMain.CreateSection("Farm Observation")
--- Rejoin lai chinh server hien tai (copy JobId hien tai -> join lai JobId do) thay vi hop sang server moi
+KenLevelLabel = FarmObservationSection.CreateLabel({ Title = "Ken Level : ..." })
+_G.__KenLevelToken = (_G.__KenLevelToken or 0) + 1
+local __kenToken = _G.__KenLevelToken
+task.spawn(function()
+	while _G.__KenLevelToken == __kenToken do
+		local ok, result = pcall(function()
+			return game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("KenTalk", "Status")
+		end)
+		local num
+		if ok then
+			if type(result) == "number" then
+				num = result
+			else
+				local str = tostring(result)
+				num = tonumber(str:match("^%s*(%d+)") or str:match("(%d+)"))
+			end
+		end
+		pcall(function()
+			KenLevelLabel.SetText("Ken Level : " .. (num and tostring(num) or "N/A"))
+		end)
+		task.wait(2.5)
+	end
+end)
 local __rejoining = false
 function RejoinCurrentServer()
 	if __rejoining then
@@ -17763,7 +17566,6 @@ function RejoinCurrentServer()
 			game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, jobId, game.Players.LocalPlayer)
 		end)
 	end
-	-- doi teleport chay; neu 10s van chua roi server (teleport fail) thi cho phep thu lai
 	task.delay(10, function()
 		__rejoining = false
 	end)
@@ -18734,7 +18536,6 @@ local function E()
 	return "DLCBoxData", nil
 end
 local function b()
-	-- chạy thẳng lệnh mua gacha từ xa
 	local ok, res = pcall(function()
 		return game:GetService("ReplicatedStorage").Modules.Net["RF/GachaNetworkRF"]:InvokeServer({
 			Context = "Purchase",
@@ -19617,8 +19418,6 @@ function manageTween(J, F, q, c)
 	P = P + (1)
 	l(true)
 	getgenv().noclip = true
-	-- NOCLIP THUYỀN: set CanCollide=false mỗi frame (Stepped, trước bước physics) cho cả thuyền và nhân vật.
-	-- Trước đây chỉ set 1 lần nên game/Humanoid bật lại collision -> thuyền va model đảo, bị đẩy lùi và tween bị giật ngược.
 	do
 		local nc_parts, nc_next = {}, 0
 		noclipConn = x.Stepped:Connect(function()
@@ -19628,7 +19427,6 @@ function manageTween(J, F, q, c)
 			if tick() >= nc_next then
 				nc_next = tick() + 0.5
 				nc_parts = {}
-				-- model thuyền = model nằm ngay dưới workspace.Boats
 				local boat = J.Parent
 				while boat and boat.Parent and boat.Parent.Name ~= "Boats" and boat.Parent ~= workspace do
 					boat = boat.Parent
@@ -19719,7 +19517,6 @@ local function y()
 end
 NumberSpinBoat = NumberSpinBoat or 1
 if not CFrameSpinBoat then
-	-- PLACEHOLDER: ban goc bi mat, dung 6 goc xoay 60 do quanh truc Y
 	CFrameSpinBoat = {}
 	for i = 0, 5 do
 		CFrameSpinBoat[i + 1] = CFrame.Angles(0, math.rad(60 * i), 0)
@@ -22298,7 +22095,6 @@ function DetectRockVolcano()
 	end
 	return R
 end
--- Use Skull Guitar with fix lava: click chuot vao model da (world -> screen), moi `interval` giay click 1 lan
 function ClickModelFixLava(model, interval)
 	if not model or tick() - (getgenv().__LastRockClick or 0) < (interval or 0.6) then
 		return
@@ -22320,7 +22116,6 @@ function ClickModelFixLava(model, interval)
 	vim:SendMouseButtonEvent(x, y, 0, true, game, 1)
 	vim:SendMouseButtonEvent(x, y, 0, false, game, 1)
 end
--- Co da can sua: trang bi Skull Guitar (chua co thi LoadItem lay ra), du gan da (< 100 studs) thi click vao model da moi 0.6s
 function UseSkullGuitarFixLava(rock)
 	local char = t.Character
 	if not char or not rock then
@@ -29016,11 +28811,6 @@ a.CreateBind({ Title = "Toggle GUI", Key = Enum.KeyCode.LeftControl }, function(
 		end
 	end
 end)
--- ===== AUTO LOAD SCRIPT: queue_on_teleport để tự chạy lại sau khi hop server / rejoin do disconnect =====
--- Không cần Key, không cần bỏ vào autoexec. Nguồn script (ưu tiên từ trên xuống):
---   1) getgenv().AutoLoadURL = "link raw script" (đặt trước khi chạy, nếu bạn chạy script bằng link)
---   2) bản copy script tự lưu ở "Banana Cat Hub/AutoLoad.lua" (tự lưu lúc chạy nếu executor cho đọc source)
---   3) loader gốc banana-hub (chỉ khi có Key)
 spawn(function()
 	pcall(function()
 		local queue = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
@@ -29030,7 +28820,6 @@ spawn(function()
 		end
 		local AUTO_FILE = FolderName .. "/AutoLoad.lua"
 
-		-- tự lưu source của chính script này (best-effort, tuỳ executor có trả full source hay không)
 		pcall(function()
 			local src = debug.getinfo(1, "S").source
 			if type(src) == "string" and #src > 100000 and src:find("Auto Load Script", 1, true) then
@@ -29067,7 +28856,7 @@ spawn(function()
 							'local ok, cfg = pcall(function() return game:GetService("HttpService"):JSONDecode(readfile(%q)) end)\n',
 							cfgPath
 						)
-						.. 'if ok and type(cfg) == "table" and cfg["Auto Load Script"] == false then return end\n' -- đã tắt toggle thì không chạy
+						.. 'if ok and type(cfg) == "table" and cfg["Auto Load Script"] == false then return end\n'
 					if getgenv().Key then
 						header = header .. string.format("getgenv().Key = %q\n", getgenv().Key)
 					end
@@ -29088,7 +28877,6 @@ loadstring(
 )()
 x = game:GetService("RunService")
 
--- NOCLIP chay tren Stepped (truoc physics), doc lap voi phan con lai cua script
 if not getgenv().__NOCLIP_STEPPED then
 	getgenv().__NOCLIP_STEPPED = x.Stepped:Connect(function()
 		local char = t.Character
@@ -29108,7 +28896,6 @@ if not getgenv().__NOCLIP_STEPPED then
 	end)
 end
 
--- require an toan: module nao game xoa/doi ten thi bo qua, khong lam chet script
 local function safeRequire(getModule)
 	local ok, res = pcall(function()
 		return require(getModule())
@@ -29151,7 +28938,6 @@ if not getgenv().BananaCatMainLoop then
 				end
 			end
 			local T = t.Character:FindFirstChild("HumanoidRootPart")
-			-- Auto Secret Quest: luon giu fly (FloatForce) khi toggle bat, chi go khi tat toggle
 			local secretOn = Settings["Auto Secret Quest"]
 			if T and secretOn and not T:FindFirstChild("FloatForce") then
 				local ff = Instance.new("BodyVelocity")
@@ -29241,5 +29027,4 @@ if not getgenv().BananaCatMainLoop then
 		end
 	end)
 end
--- (da bo collectgarbage("collect") luc OnTeleport: full GC giua luc engine dang huy map cu gay crash)
 getgenv().__BF_LOADED = game.JobId
