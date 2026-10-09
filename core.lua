@@ -4163,7 +4163,7 @@ SectionLocalPlayerMain.CreateToggle(
 						if
 							m
 							and game.Players.localPlayer.Data.Points.Value > 0
-							and game:GetService("Players").LocalPlayer.Data.Stats[R].Level.Value < 2800
+							and game:GetService("Players").LocalPlayer.Data.Stats[R].Level.Value < 3000
 						then
 							game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", R, 9999)
 							wait(3)
@@ -6737,9 +6737,76 @@ local function m(E)
 		and E.Humanoid.Health > 0
 		and (t.Character.HumanoidRootPart.Position - E.HumanoidRootPart.Position).Magnitude < 70
 end
+AutoSkillVMelees = { ["Black Leg"] = true, ["Death Step"] = true }
+function IsMeleeSkillReady(meleeName, key)
+	local main = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
+	local skills = main and main:FindFirstChild("Skills")
+	local list = skills and skills:FindFirstChild(meleeName)
+	local frame = list and list:FindFirstChild(key)
+	if not frame or not frame:IsA("Frame") then
+		return false
+	end
+	local cooldown = frame:FindFirstChild("Cooldown")
+	if not cooldown or cooldown.Size.X.Scale > 0 then
+		return false
+	end
+	local title = frame:FindFirstChild("Title")
+	if title and title:IsA("TextLabel") and title.TextColor3.R <= 0.9 then
+		return false
+	end
+	return true
+end
+local legVRunning, legVRetryAt = false, 0
+getgenv().LegVSkillEnsure = function()
+	if legVRunning or getgenv().Sky3Climbing or tick() < legVRetryAt then
+		return
+	end
+	local meleeName = NameWeapon("Melee")
+	if not meleeName or not AutoSkillVMelees[meleeName] then
+		return
+	end
+	local ch = t.Character
+	local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 or hum.Sit then
+		return
+	end
+	legVRunning = true
+	pcall(function()
+		local skills = t.PlayerGui:FindFirstChild("Main") and t.PlayerGui.Main:FindFirstChild("Skills")
+		if skills and not skills:FindFirstChild(meleeName) then
+			equiptool(meleeName)
+			task.wait(0.3)
+			if not skills:FindFirstChild(meleeName) then
+				legVRetryAt = tick() + 5
+				return
+			end
+		end
+		if not IsMeleeSkillReady(meleeName, "V") then
+			return
+		end
+		if not ch:FindFirstChild(meleeName) then
+			equiptool(meleeName)
+			task.wait(0.15)
+		end
+		if ch:FindFirstChild(meleeName) then
+			local vim = game:GetService("VirtualInputManager")
+			vim:SendKeyEvent(true, "V", false, game)
+			if Settings["Use skill fast dont hold"] then
+				task.wait(0.05)
+			else
+				task.wait(HoldDelay("V", meleeName))
+			end
+			vim:SendKeyEvent(false, "V", false, game)
+		end
+	end)
+	legVRunning = false
+end
 getgenv().ClickM1 = function(E, l)
 	if E and getgenv().BuddhaFarmEnsure then
 		getgenv().BuddhaFarmEnsure()
+	end
+	if E and getgenv().LegVSkillEnsure then
+		getgenv().LegVSkillEnsure()
 	end
 	if not m(E) then
 		return
@@ -6755,6 +6822,9 @@ getgenv().ClickM1Dungeon = function(E, l)
 	if E and getgenv().BuddhaFarmEnsure then
 		getgenv().BuddhaFarmEnsure()
 	end
+	if E and getgenv().LegVSkillEnsure then
+		getgenv().LegVSkillEnsure()
+	end
 	if not m(E) then
 		return
 	end
@@ -6768,6 +6838,9 @@ end
 getgenv().ClickM1Volcano = function(E, l)
 	if E and getgenv().BuddhaFarmEnsure then
 		getgenv().BuddhaFarmEnsure()
+	end
+	if E and getgenv().LegVSkillEnsure then
+		getgenv().LegVSkillEnsure()
 	end
 	if not m(E) then
 		return
@@ -8330,19 +8403,6 @@ function AutoAllSkill(V)
 	if C and not J:FindFirstChild(C.Name) then
 		equiptool(C.Name)
 		return
-	end
-	if V and AutoSkillVMelees and AutoSkillVMelees[V.Name] and IsMeleeSkillReady(V.Name, "V") then
-		equiptool(V.Name)
-		if t.Character:FindFirstChild(V.Name) then
-			game:GetService("VirtualInputManager"):SendKeyEvent(true, "V", false, game)
-			if Settings["Use skill fast dont hold"] then
-				task.wait(0.05)
-			else
-				task.wait(HoldDelay("V", V.Name))
-			end
-			game:GetService("VirtualInputManager"):SendKeyEvent(false, "V", false, game)
-			return
-		end
 	end
 	J = (function() if V and (CheckCDSkillTransformation(V, Settings["Select Skills " .. V.ToolTip])) then return (CheckCDSkillTransformation(V, Settings["Select Skills " .. V.ToolTip])) else return (function() if H and (CheckCDSkillTransformation(H, Settings["Select Skills " .. H.ToolTip])) then return (CheckCDSkillTransformation(H, Settings["Select Skills " .. H.ToolTip])) else return (function() if C and (CheckCDSkillTransformation(C, Settings["Select Skills " .. C.ToolTip])) then return (CheckCDSkillTransformation(C, Settings["Select Skills " .. C.ToolTip])) else return (function() if B and (CheckCDSkillTransformation(B, Settings["Select Skills " .. B.ToolTip])) then return (CheckCDSkillTransformation(B, Settings["Select Skills " .. B.ToolTip])) else return nil end end)() end end)() end end)() end end)()
 	if J then
@@ -16175,27 +16235,6 @@ HiddenEventSection.CreateToggle({
 	end)
 end)
 
-
-AutoSkillVMelees = { ["Black Leg"] = true, ["Death Step"] = true }
-
-function IsMeleeSkillReady(meleeName, key)
-	local main = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
-	local skills = main and main:FindFirstChild("Skills")
-	local list = skills and skills:FindFirstChild(meleeName)
-	local frame = list and list:FindFirstChild(key)
-	if not frame or not frame:IsA("Frame") then
-		return false
-	end
-	local cooldown = frame:FindFirstChild("Cooldown")
-	if not cooldown or cooldown.Size.X.Scale > 0 then
-		return false
-	end
-	local title = frame:FindFirstChild("Title")
-	if title and title:IsA("TextLabel") and title.TextColor3.R <= 0.9 then
-		return false
-	end
-	return true
-end
 
 BuyMeleeQuestDefs = {
 	["Electro"] = { Name = "Electric Fighting Teacher", Island = "Sky" },
